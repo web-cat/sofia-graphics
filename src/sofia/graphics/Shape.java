@@ -15,8 +15,8 @@ import sofia.graphics.internal.GeometryUtils;
  * it represents, and how to use it.
  *
  * @author  Tony Allevato
- * @author  Last changed by $Author$
- * @version $Revision$, $Date$
+ * @author  Last changed by $Author: edwards $
+ * @version $Date: 2012/08/04 16:32 $
  */
 public abstract class Shape
 {
@@ -56,7 +56,7 @@ public abstract class Shape
     /**
      * Creates a new shape with the specified bounds.
      *
-     * @param bounds the bounds of the shape
+     * @param bounds The bounds of the shape.
      */
     public Shape(RectF bounds)
     {
@@ -70,10 +70,14 @@ public abstract class Shape
     //~ Methods ...............................................................
 
     // ----------------------------------------------------------
+    /**
+     * Add another shape to the same view (or parent) containing this shape.
+     * @param newShape The other shape to add.
+     */
     public void addOther(Shape newShape)
     {
     	ShapeParent parent = getShapeParent();
-    	
+
     	if (parent != null)
     	{
     		parent.add(newShape);
@@ -82,10 +86,13 @@ public abstract class Shape
 
 
     // ----------------------------------------------------------
+    /**
+     * Remove this shape from its view (or parent).
+     */
     public void remove()
     {
     	ShapeParent parent = getShapeParent();
-    	
+
     	if (parent != null)
     	{
     		parent.remove(this);
@@ -99,7 +106,7 @@ public abstract class Shape
      * bounding rectangle is the shape's origin, and the bottom-right corner
      * is the shape's extent.
      *
-     * @return the bounding rectangle of the shape
+     * @return The bounding rectangle of the shape.
      */
     public RectF getBounds()
     {
@@ -111,7 +118,7 @@ public abstract class Shape
     /**
      * Sets the bounding rectangle of the shape.
      *
-     * @param newBounds the new bounding rectangle of the shape
+     * @param newBounds The new bounding rectangle of the shape.
      */
     public void setBounds(RectF newBounds)
     {
@@ -131,7 +138,7 @@ public abstract class Shape
     /**
      * Gets the current angle of rotation of the shape, in degrees clockwise.
      *
-     * @return the current angle of rotation of the shape
+     * @return The current angle of rotation of the shape.
      */
     public float getRotation()
     {
@@ -141,10 +148,10 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Gets the point around which the shape's rotation will pivot. By default,
-     * the center of the shape's bounding box is used.
+     * Gets the point around which the shape's rotation will pivot. By
+     * default, the center of the shape's bounding box is used.
      *
-     * @return the point around which the shape's rotation will pivot
+     * @return The point around which the shape's rotation will pivot.
      */
     public PointF getRotationPivot()
     {
@@ -154,10 +161,10 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Sets the angle of rotation of the shape in degrees clockwise, using the
-     * center of the shape's bounding box as the pivot point.
+     * Sets the angle of rotation of the shape in degrees clockwise, using
+     * the center of the shape's bounding box as the pivot point.
      *
-     * @param newRotation the new angle of rotation of the shape
+     * @param newRotation The new angle of rotation of the shape.
      */
     public void setRotation(float newRotation)
     {
@@ -167,11 +174,11 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Sets the angle of rotation of the shape in degrees clockwise, using the
-     * specified point as the pivot point.
+     * Sets the angle of rotation of the shape in degrees clockwise, using
+     * the specified point as the pivot point.
      *
-     * @param newRotation the new angle of rotation of the shape
-     * @param newPivot the point around which the rotation will pivot
+     * @param newRotation The new angle of rotation of the shape.
+     * @param newPivot    The point around which the rotation will pivot.
      */
     public void setRotation(float newRotation, PointF newPivot)
     {
@@ -187,10 +194,10 @@ public abstract class Shape
     // ----------------------------------------------------------
     /**
      * Increments the shape's rotation by the specified number of degrees,
-     * around the same pivot point that was used previously (or the center of
-     * the shape if no other pivot has been previously used).
+     * around the same pivot point that was used previously (or the center
+     * of the shape if no other pivot has been previously used).
      *
-     * @param angleDelta the number of degrees to add to the shape's rotation
+     * @param angleDelta The number of degrees to add to the shape's rotation.
      */
     public void rotateBy(float angleDelta)
     {
@@ -234,11 +241,11 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Gets the current linear transformation that will be applied to the shape
-     * when it is drawn. Currently, the matrix only contains rotation
+     * Gets the current linear transformation that will be applied to the
+     * shape when it is drawn. Currently, the matrix only contains rotation
      * information.
      *
-     * @return the current linear transformation that is applied to the shape
+     * @return The current linear transformation that is applied to the shape.
      */
     public Matrix getTransform()
     {
@@ -251,8 +258,8 @@ public abstract class Shape
      * Gets the x-coordinate of the top-left corner of the shape's bounding
      * box.
      *
-     * @return the x-coordinate of the top-left corner of the shape's bounding
-     *     box
+     * @return The x-coordinate of the top-left corner of the shape's
+     *         bounding box.
      */
     public float getX()
     {
@@ -263,11 +270,11 @@ public abstract class Shape
     // ----------------------------------------------------------
     /**
      * Sets the x-coordinate of the top-left corner of the shape's bounding
-     * box. This moves the shape, so calling this method also causes the extent
-     * of the shape to change, keeping with width the same.
+     * box. This moves the shape, so calling this method also causes the
+     * extent of the shape to change, keeping with width the same.
      *
-     * @param x the x-coordinate of the top-left corner of the shape's bounding
-     *     box
+     * @param x The x-coordinate of the top-left corner of the shape's
+     *          bounding box.
      */
     public void setX(float x)
     {
@@ -282,8 +289,8 @@ public abstract class Shape
      * Gets the y-coordinate of the top-left corner of the shape's bounding
      * box.
      *
-     * @return the y-coordinate of the top-left corner of the shape's bounding
-     *     box
+     * @return The y-coordinate of the top-left corner of the shape's
+     *         bounding box.
      */
     public float getY()
     {
@@ -294,11 +301,11 @@ public abstract class Shape
     // ----------------------------------------------------------
     /**
      * Sets the y-coordinate of the top-left corner of the shape's bounding
-     * box. This moves the shape, so calling this method also causes the extent
-     * of the shape to change, keeping with height the same.
+     * box. This moves the shape, so calling this method also causes the
+     * extent of the shape to change, keeping with height the same.
      *
-     * @param y the y-coordinate of the top-left corner of the shape's bounding
-     *     box
+     * @param y The y-coordinate of the top-left corner of the shape's
+     *          bounding box.
      */
     public void setY(float y)
     {
@@ -313,8 +320,8 @@ public abstract class Shape
      * Gets the x-coordinate of the bottom-right corner (the extent) of the
      * shape's bounding box.
      *
-     * @return the x-coordinate of the bottom-right corner of the shape's
-     *     bounding box
+     * @return The x-coordinate of the bottom-right corner of the shape's
+     *         bounding box.
      */
     public float getX2()
     {
@@ -328,8 +335,8 @@ public abstract class Shape
      * shape's bounding box. This does not change the position of the other
      * corner, so calling this method has the effect of resizing the shape.
      *
-     * @param x2 the x-coordinate of the bottom-right corner of the shape's
-     *     bounding box
+     * @param x2 The x-coordinate of the bottom-right corner of the shape's
+     *           bounding box.
      */
     public void setX2(float x2)
     {
@@ -344,8 +351,8 @@ public abstract class Shape
      * Gets the y-coordinate of the bottom-right corner (the extent) of the
      * shape's bounding box.
      *
-     * @return the y-coordinate of the bottom-right corner of the shape's
-     *     bounding box
+     * @return The y-coordinate of the bottom-right corner of the shape's
+     *         bounding box.
      */
     public float getY2()
     {
@@ -359,8 +366,8 @@ public abstract class Shape
      * shape's bounding box. This does not change the position of the other
      * corner, so calling this method has the effect of resizing the shape.
      *
-     * @param y2 the y-coordinate of the bottom-right corner of the shape's
-     *     bounding box
+     * @param y2 The y-coordinate of the bottom-right corner of the shape's
+     *           bounding box.
      */
     public void setY2(float y2)
     {
@@ -374,7 +381,7 @@ public abstract class Shape
     /**
      * Gets the width of the shape, in pixels.
      *
-     * @return the width of the shape
+     * @return The width of the shape.
      */
     public float getWidth()
     {
@@ -386,7 +393,7 @@ public abstract class Shape
     /**
      * Gets the height of the shape, in pixels.
      *
-     * @return the height of the shape
+     * @return The height of the shape.
      */
     public float getHeight()
     {
@@ -400,7 +407,7 @@ public abstract class Shape
      * {@link PointF#x} and {@link PointF#y} fields of the returned point may
      * not be valid if layout of the shapes has not yet occurred.
      *
-     * @return a {@link PointF} object describing the origin of the shape
+     * @return A {@link PointF} object describing the origin of the shape.
      */
     public PointF getPosition()
     {
@@ -412,8 +419,8 @@ public abstract class Shape
     /**
      * Sets the origin (top-left corner) of the receiver.
      *
-     * @param position a {@link PointF} object describing the origin of the
-     *     shape
+     * @param position A {@link PointF} object describing the origin of the
+     *                 shape.
      */
     public void setPosition(PointF position)
     {
@@ -428,8 +435,8 @@ public abstract class Shape
      * Sets the position of the receiver based on the specified point and
      * anchor, leaving its size unchanged.
      *
-     * @param pointAndAnchor a {@link PointAndAnchor} object describing the
-     *     position of the shape
+     * @param pointAndAnchor A {@link PointAndAnchor} object describing the
+     *                       position of the shape.
      */
     public void setPosition(PointAndAnchor pointAndAnchor)
     {
@@ -442,11 +449,11 @@ public abstract class Shape
     // ----------------------------------------------------------
     /**
      * Moves the receiver by the specified horizontal and vertical distance.
-     * Positive values move the shape to the right or down, and negative values
-     * move it to the left or up.
+     * Positive values move the shape to the right or down, and negative
+     * values move it to the left or up.
      *
-     * @param dx the number of pixels to move the shape horizontally
-     * @param dy the number of pixels to move the shape vertically
+     * @param dx The number of pixels to move the shape horizontally.
+     * @param dy The number of pixels to move the shape vertically.
      */
     public void move(float dx, float dy)
     {
@@ -462,7 +469,7 @@ public abstract class Shape
      * {@link PointF#x} and {@link PointF#y} fields of the returned point may
      * not be valid if layout of the shapes has not yet occurred.
      *
-     * @return a {@link PointF} object describing the origin of the shape
+     * @return A {@link PointF} object describing the origin of the shape.
      */
     public PointF getExtent()
     {
@@ -474,8 +481,8 @@ public abstract class Shape
     /**
      * Sets the extent (bottom-right corner) of the receiver.
      *
-     * @param extent a {@link PointF} object describing the extent of the
-     *     shape
+     * @param extent A {@link PointF} object describing the extent of the
+     *               shape.
      */
     public void setExtent(PointF extent)
     {
@@ -489,15 +496,16 @@ public abstract class Shape
     // ----------------------------------------------------------
     /**
      * Transforms a point on the screen into the original bounds of a shape,
-     * pre-rotation. This method is mainly meant to be used by subclasses that
-     * need to provide their own {@link #contains(float, float)}
-     * implementation, so that those methods return the correct values when a
-     * rotation is applied to the shape.
+     * pre-rotation. This method is mainly meant to be used by subclasses
+     * that need to provide their own {@link #contains(float, float)}
+     * implementation, so that those methods return the correct values when
+     * a rotation is applied to the shape.
      *
-     * @param x the x-coordinate in the view
-     * @param y the y-coordinate in the view
-     * @return a two-element float array that contains the x- and y-coordinates
-     *     that the inputs would mape to before the rotation was applied
+     * @param x The x-coordinate in the view.
+     * @param y The y-coordinate in the view.
+     * @return A two-element float array that contains the x- and
+     *     y-coordinates that the inputs would map to before the rotation
+     *     was applied.
      */
     protected float[] inverseTransformPoint(float x, float y)
     {
@@ -538,9 +546,9 @@ public abstract class Shape
      * to simplify this.
      * </p>
      *
-     * @param x the x-coordinate
-     * @param y the y-coordinate
-     * @return true if the shape contains the point, otherwise false
+     * @param x The x-coordinate.
+     * @param y The y-coordinate.
+     * @return True if the shape contains the point, otherwise false.
      */
     public boolean contains(float x, float y)
     {
@@ -554,8 +562,8 @@ public abstract class Shape
      * Gets a value indicating whether the specified pixel location is
      * contained in the receiver.
      *
-     * @param point the point
-     * @return true if the shape contains the point, otherwise false
+     * @param point The point.
+     * @return True if the shape contains the point, otherwise false.
      */
     public boolean contains(PointF point)
     {
@@ -581,7 +589,7 @@ public abstract class Shape
      * drawn on top of a shape with a lower z-index. By default, shapes are
      * created with a z-index of 0.
      *
-     * @return the z-index of the shape
+     * @return The z-index of the shape.
      */
     public int getZIndex()
     {
@@ -593,7 +601,7 @@ public abstract class Shape
     /**
      * Sets the z-index of the receiver.
      *
-     * @param newZIndex the new z-index of the shape
+     * @param newZIndex The new z-index of the shape.
      */
     public void setZIndex(int newZIndex)
     {
@@ -623,7 +631,7 @@ public abstract class Shape
     /**
      * Gets the parent of the receiver.
      *
-     * @return the parent of the receiver
+     * @return The parent of the receiver.
      */
     public final ShapeParent getShapeParent()
     {
@@ -635,7 +643,7 @@ public abstract class Shape
     /**
      * Gets the parent of the receiver.
      *
-     * @return the parent of the receiver
+     * @return The parent of the receiver.
      */
     public final ShapeView getParentView()
     {
@@ -659,7 +667,7 @@ public abstract class Shape
     /**
      * Sets the parent of the receiver.
      *
-     * @param newParent the new parent
+     * @param newParent The new parent.
      */
     final void setParent(ShapeParent newParent)
     {
@@ -671,7 +679,7 @@ public abstract class Shape
     /**
      * Gets the color of the receiver.
      *
-     * @return the color of the receiver
+     * @return The color of the receiver.
      */
     public Color getColor()
     {
@@ -683,7 +691,7 @@ public abstract class Shape
     /**
      * Sets the color of the receiver.
      *
-     * @param newColor the new color of the receiver
+     * @param newColor The new color of the receiver.
      */
     public void setColor(Color newColor)
     {
@@ -697,8 +705,9 @@ public abstract class Shape
      * A convenience method that gets the alpha (opacity) component of the
      * shape's color.
      *
-     * @return the alpha component of the shape's color, where 0 means that the
-     *     color is fully transparent and 255 means that it is fully opaque
+     * @return The alpha component of the shape's color, where 0 means that
+     *         the color is fully transparent and 255 means that it is fully
+     *         opaque.
      */
     public int getAlpha()
     {
@@ -711,9 +720,9 @@ public abstract class Shape
      * A convenience method that sets the alpha (opacity) component of the
      * shape's color without changing the other color components.
      *
-     * @param newAlpha the new alpha component of the shape's color, where 0
-     *     means that the color is fully transparent and 255 means that it is
-     *     fully opaque
+     * @param newAlpha The new alpha component of the shape's color, where 0
+     *                 means that the color is fully transparent and 255
+     *                 means that it is fully opaque.
      */
     public void setAlpha(int newAlpha)
     {
@@ -726,7 +735,7 @@ public abstract class Shape
      * Gets a value indicating whether the receiver is visible (drawn on the
      * screen). Invisible shapes also do not receive touch events.
      *
-     * @return true if the shape is visible, otherwise false
+     * @return True if the shape is visible, otherwise false.
      */
     public boolean isVisible()
     {
@@ -739,7 +748,7 @@ public abstract class Shape
      * Sets a value indicating whether the receiver is visible (drawn on the
      * screen).
      *
-     * @param newVisible true if the shape should be visible, otherwise false
+     * @param newVisible True if the shape should be visible, otherwise false.
      */
     public void setVisible(boolean newVisible)
     {
@@ -754,12 +763,12 @@ public abstract class Shape
      * Gets an <em>animator</em> object that lets the user animate properties
      * of the receiving shape.
      * </p><p>
-     * For ease of use, the description of the animation desired can be chained
-     * directly to the result of this method. For example, the following code
-     * fragment would create an animation that runs for 2 seconds, gradually
-     * changing the shape's color to red, its position to the top-right corner
-     * of the view, and then starts the animation after a delay of 1 second
-     * after the method is called:
+     * For ease of use, the description of the animation desired can be
+     * chained directly to the result of this method. For example, the
+     * following code fragment would create an animation that runs for 2
+     * seconds, gradually changing the shape's color to red, its position
+     * to the top-right corner of the view, and then starts the animation
+     * after a delay of 1 second after the method is called:
      * <pre>
      *     shape.animate(2000)
      *          .delay(1000)
@@ -769,9 +778,9 @@ public abstract class Shape
      * </pre>
      * </p>
      *
-     * @param duration the length of the animation, in milliseconds
-     * @return a {@link ShapeAnimator} that lets the user animate properties of
-     *     the receiving shape
+     * @param duration The length of the animation in milliseconds.
+     * @return A {@link ShapeAnimator} that lets the user animate properties
+     *         of the receiving shape.
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public ShapeAnimator animate(long duration)
@@ -799,7 +808,7 @@ public abstract class Shape
     /**
      * Draws the receiver on the canvas.
      *
-     * @param canvas the Canvas on which to draw the shape
+     * @param canvas The Canvas on which to draw the shape.
      */
     public abstract void draw(Canvas canvas);
 
@@ -813,7 +822,7 @@ public abstract class Shape
      * the superclass implementation and then add their own styles to the
      * returned object.
      *
-     * @return a Paint object describing how the shape should be drawn
+     * @return A Paint object describing how the shape should be drawn.
      */
     protected Paint getPaint()
     {
@@ -882,7 +891,7 @@ public abstract class Shape
     /**
      * Returns a human-readable string representation of the shape.
      *
-     * @return a human-readable string representation of the shape
+     * @return A human-readable string representation of the shape.
      */
     @Override
     public String toString()
@@ -920,14 +929,14 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Check whether all of the vertexes in the "other" rotated rectangle are on the
-     * outside of any one of the edges in "my" rotated rectangle.
+     * Check whether all of the vertexes in the "other" rotated rectangle
+     * are on the outside of any one of the edges in "my" rotated rectangle.
      *
-     * @param myBox    The rotated corners of "my" bounding box
-     * @param otherBox The rotated corners of the "other" bounding box
+     * @param myBox    The rotated corners of "my" bounding box.
+     * @param otherBox The rotated corners of the "other" bounding box.
      *
-     * @return  true if all corners of the "other" rectangle are on the outside of any of
-     *          the edges of "my" rectangle.
+     * @return True if all corners of the "other" rectangle are on the
+     *         outside of any of  the edges of "my" rectangle.
      */
     private static boolean checkOutside(float [][] myBox, float[][] otherBox)
     {
@@ -1008,14 +1017,6 @@ public abstract class Shape
         boolean top    = false;
         boolean right  = false;
         boolean bottom = false;
-
-        RectF box = getBounds();
-        if (box.left < 0.0f || box.top < 0.0f
-            || box.right > bounds.right
-            || box.bottom > bounds.bottom)
-        {
-            System.out.println("crossed over!");
-        }
 
         updateRotatedCorners();
         for (int i = 0; i < 4; i++)

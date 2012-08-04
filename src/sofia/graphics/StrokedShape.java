@@ -1,36 +1,39 @@
 package sofia.graphics;
 
-import android.view.animation.Interpolator;
-import sofia.graphics.animation.ShapeAnimator;
 import sofia.graphics.animation.StrokedShapeAnimator;
 import android.graphics.Paint;
-import android.graphics.Canvas;
-import android.graphics.PointF;
-import android.graphics.RectF;
 
-public abstract class StrokedShape extends Shape
+//-------------------------------------------------------------------------
+/**
+ * A {@link Shape} that is stroked when it is drawn.
+ *
+ * @author  Tony Allevato
+ * @author  Last changed by $Author: edwards $
+ * @version $Date: 2012/08/04 16:32 $
+ */
+public abstract class StrokedShape
+    extends Shape
 {
+    //~ Fields ................................................................
+
     private double strokeWidth;
     private Paint.Cap strokeCap;
     private Paint.Join strokeJoin;
     private double strokeMiter;
 
 
+    //~ Constructors ..........................................................
+
+    // ----------------------------------------------------------
     public StrokedShape()
     {
         init();
     }
 
 
-    private void init()
-    {
-        strokeWidth = 1.0;
-        strokeCap = Paint.Cap.BUTT;
-        strokeJoin = Paint.Join.MITER;
-        strokeMiter = 0.0;
-    }
+    //~ Public Methods ........................................................
 
-
+    // ----------------------------------------------------------
     @SuppressWarnings("rawtypes")
     public StrokedShapeAnimator animate(long duration)
     {
@@ -38,12 +41,14 @@ public abstract class StrokedShape extends Shape
     }
 
 
+    // ----------------------------------------------------------
     public double getStrokeWidth()
     {
         return strokeWidth;
     }
 
 
+    // ----------------------------------------------------------
     public void setStrokeWidth(double newStrokeWidth)
     {
         this.strokeWidth = newStrokeWidth;
@@ -51,12 +56,14 @@ public abstract class StrokedShape extends Shape
     }
 
 
+    // ----------------------------------------------------------
     public Paint.Cap getStrokeCap()
     {
         return strokeCap;
     }
 
 
+    // ----------------------------------------------------------
     public void setStrokeCap(Paint.Cap newStrokeCap)
     {
         this.strokeCap = newStrokeCap;
@@ -64,12 +71,14 @@ public abstract class StrokedShape extends Shape
     }
 
 
+    // ----------------------------------------------------------
     public Paint.Join getStrokeJoin()
     {
         return strokeJoin;
     }
 
 
+    // ----------------------------------------------------------
     public void setStrokeJoin(Paint.Join newStrokeJoin)
     {
         this.strokeJoin = newStrokeJoin;
@@ -77,12 +86,14 @@ public abstract class StrokedShape extends Shape
     }
 
 
+    // ----------------------------------------------------------
     public double getStrokeMiter()
     {
         return strokeMiter;
     }
 
 
+    // ----------------------------------------------------------
     public void setStrokeMiter(double newStrokeMiter)
     {
         this.strokeMiter = newStrokeMiter;
@@ -90,6 +101,9 @@ public abstract class StrokedShape extends Shape
     }
 
 
+    //~ Protected Methods .....................................................
+
+    // ----------------------------------------------------------
     @Override
     protected Paint getPaint()
     {
@@ -109,5 +123,17 @@ public abstract class StrokedShape extends Shape
         paint.setStrokeMiter((float) strokeMiter);
 
         return paint;
+    }
+
+
+    //~ Private Methods .......................................................
+
+    // ----------------------------------------------------------
+    private void init()
+    {
+        strokeWidth = 0;  // 0 == "hair line", 1 pixel regardless of zoom.
+        strokeCap = Paint.Cap.BUTT;
+        strokeJoin = Paint.Join.MITER;
+        strokeMiter = 0.0;
     }
 }
