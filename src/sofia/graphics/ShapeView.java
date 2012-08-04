@@ -36,14 +36,14 @@ import android.view.SurfaceView;
  * Represents a view containing drawn {@link Shape} objects.
  *
  * @author  Tony Allevato
- * @author  Last changed by $Author$
- * @version $Revision$, $Date$
+ * @author  Last changed by $Author: edwards $
+ * @version $Date: 2012/08/04 16:32 $
  */
 public class ShapeView
     extends SurfaceView
     implements ShapeParent
 {
-    //~ Instance/static variables .......................................
+    //~ Fields ................................................................
 
     private ShapeCollection shapes;
     private boolean needsLayout;
@@ -80,7 +80,7 @@ public class ShapeView
         new MethodDispatcher("onCollisionBetween", 2);
 
 
-    //~ Constructors ....................................................
+    //~ Constructors ..........................................................
 
     // ----------------------------------------------------------
     /**
@@ -100,7 +100,7 @@ public class ShapeView
      * Creates a new ShapeView.
      *
      * @param context This view's context.
-     * @param attrs This view's attributes.
+     * @param attrs   This view's attributes.
      */
     public ShapeView(Context context, AttributeSet attrs)
     {
@@ -113,9 +113,9 @@ public class ShapeView
     /**
      * Creates a new ShapeView.
      *
-     * @param context   This view's context.
-     * @param attrs     This view's attributes.
-     * @param defStyle  This view's default style.
+     * @param context  This view's context.
+     * @param attrs    This view's attributes.
+     * @param defStyle This view's default style.
      */
     public ShapeView(Context context, AttributeSet attrs, int defStyle)
     {
@@ -124,7 +124,7 @@ public class ShapeView
     }
 
 
-    //~ Methods .........................................................
+    //~ Methods ...............................................................
 
     // ----------------------------------------------------------
     private void init()
@@ -174,7 +174,7 @@ public class ShapeView
     /**
      * Does this view automatically repaint, or is an explicit call needed?
      * @return True if this view automatically repaints when contained
-     * shapes are modified.
+     *         shapes are modified.
      * @see #setAutoRepaint(boolean)
      */
     public synchronized boolean doesAutoRepaint()
@@ -199,7 +199,7 @@ public class ShapeView
     /**
      * Used internally to temporarily disable repainting.
      * @param value Says whether the current thread is restoring auto-painting
-     * or disabling auto-painting.
+     *              or disabling auto-painting.
      */
     public synchronized void internalSetAutoRepaintForThread(boolean value)
     {
@@ -733,7 +733,7 @@ public class ShapeView
                 Method onTouchEvent = detector.getClass().getMethod(
                     "onTouchEvent", MotionEvent.class);
 
-                boolean thisResult = (Boolean) onTouchEvent.invoke(detector, e);
+                boolean thisResult = (Boolean)onTouchEvent.invoke(detector, e);
 
                 result |= thisResult;
             }
@@ -797,7 +797,7 @@ public class ShapeView
 	    	for (Shape shape : shapes)
 	    	{
 	        	eventHandled |= method.callMethodOn(shape, e);
-	        	
+
 	        	if (method == onTouchDown && onTouchMove.supportedBy(shape, e))
         		{
         			shapeBeingDragged = shape;
@@ -836,7 +836,7 @@ public class ShapeView
     /**
      * Returns true if the left shape is drawn in front of (later than) the
      * shape on the right.
-     * @param left The shape to check.
+     * @param left  The shape to check.
      * @param right The shape to check against.
      * @return True if left is drawn in front of (later than) right.
      */

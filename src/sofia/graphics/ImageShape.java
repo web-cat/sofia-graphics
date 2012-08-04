@@ -1,48 +1,60 @@
 package sofia.graphics;
 
-import android.content.res.Resources;
-import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.graphics.Bitmap;
-import android.graphics.Paint;
-import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.Canvas;
 
-public class BitmapShape extends Shape
+//-------------------------------------------------------------------------
+/**
+ * TODO
+ *
+ * @author  Tony Allevato
+ * @author  Last changed by $Author: edwards $
+ * @version $Date: 2012/08/04 16:32 $
+ */
+public class ImageShape
+    extends Shape
 {
-    private Bitmap bitmap;
-    private int bitmapId;
+    private Image image;
     private Rect sourceBounds;
 
 
     // ----------------------------------------------------------
-    public BitmapShape(Bitmap bitmap, RectF bounds)
+    public ImageShape(Image image, RectF bounds)
     {
-        this.bitmap = bitmap;
+        this.image = image;
         setBounds(bounds);
     }
 
 
     // ----------------------------------------------------------
-    public BitmapShape(int bitmapId, RectF bounds)
+    public ImageShape(Bitmap bitmap, RectF bounds)
     {
-        this.bitmapId = bitmapId;
+        image = new Image(bitmap);
         setBounds(bounds);
     }
 
 
     // ----------------------------------------------------------
-    public Bitmap getBitmap()
+    public ImageShape(int bitmapId, RectF bounds)
     {
-        return bitmap;
+        image = new Image(bitmapId);
+        setBounds(bounds);
+    }
+
+
+    // ----------------------------------------------------------
+    public Image getImage()
+    {
+        return image;
     }
 
 
     // ----------------------------------------------------------
     public void setBitmap(Bitmap newBitmap)
     {
-        this.bitmap = newBitmap;
+        this.image = new Image(newBitmap);
         sourceBounds = null;
         conditionallyRepaint();
     }
@@ -74,20 +86,23 @@ public class BitmapShape extends Shape
     @Override
     public void draw(Canvas canvas)
     {
-        if (bitmap == null && bitmapId != 0)
-        {
-            loadBitmapFromResource();
-        }
+        loadBitmapIfNecessary();
 
-        Paint paint = getPaint();
-        canvas.drawBitmap(bitmap, sourceBounds, getBounds(), paint);
+        // In some cases, the bitmap may be missing ...
+        Bitmap bm = image.asBitmap();
+        if (bm != null)
+        {
+            canvas.drawBitmap(bm, sourceBounds, getBounds(), getPaint());
+        }
     }
 
 
     // ----------------------------------------------------------
-    private void loadBitmapFromResource()
+    private void loadBitmapIfNecessary()
     {
-        Resources res = getParentView().getResources();
-        bitmap = BitmapFactory.decodeResource(res, bitmapId);
+        if (image.asBitmap() == null)
+        {
+            image.resolveAgainstContext(getParentView().getContext());
+        }
     }
 }
