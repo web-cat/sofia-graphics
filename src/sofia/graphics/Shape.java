@@ -29,6 +29,7 @@ public abstract class Shape
     private Color color;
     private float rotation;
     private PointF rotationPivot;
+    private PointF positionAnchor;
     private Matrix transform;
     private Matrix inverseTransform;
     private float[][] rotatedCorners;
@@ -64,6 +65,7 @@ public abstract class Shape
         this.bounds = GeometryUtils.copy(bounds);
         this.visible = true;
         this.color = Color.white;
+        this.positionAnchor = new PointF(0, 0);
     }
 
 
@@ -131,6 +133,53 @@ public abstract class Shape
 
         notifyParentOfPositionChange();
         conditionallyRepaint();
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Get the current position anchor, which is an offset relative to the
+     * upper left corner of the shape that is used as the shape's "origin"
+     * for the purposes of getting/setting x-y positions.  The default
+     * anchor is (0, 0) unless it has been explicitly set.
+     * @return The current position anchor.
+     */
+    public PointF getPositionAnchor()
+    {
+        return positionAnchor;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Set the position anchor, which is an offset relative to the
+     * upper left corner of the shape that is used as the shape's "origin"
+     * for the purposes of getting/setting x-y positions.  This does not
+     * change the shape's current position, but will change the behavior
+     * of future calls to setX()/setY()/setPosition() and
+     * getX()/getY()/getPosition().
+     * @param anchor The new position anchor.
+     */
+    public void setPositionAnchor(PointF anchor)
+    {
+        positionAnchor = new PointF(anchor.x, anchor.y);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Set the position anchor, which is an offset relative to the
+     * upper left corner of the shape that is used as the shape's "origin"
+     * for the purposes of getting/setting x-y positions.  This does not
+     * change the shape's current position, but will change the behavior
+     * of future calls to setX()/setY()/setPosition() and
+     * getX()/getY()/getPosition().
+     * @param anchor The new position anchor.
+     */
+    public void setPositionAnchor(Anchor anchor)
+    {
+        positionAnchor = anchor.getPoint(getBounds());
+        positionAnchor.offset(-getBounds().left, -getBounds().top);
     }
 
 
@@ -255,30 +304,33 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Gets the x-coordinate of the top-left corner of the shape's bounding
-     * box.
+     * Gets the x-coordinate of the anchor point of the shape's bounding
+     * box (the top-left corner, by default).
      *
-     * @return The x-coordinate of the top-left corner of the shape's
+     * @return The x-coordinate of the anchor point of the shape's
      *         bounding box.
+     * @see #setPositionAnchor(Anchor)
      */
     public float getX()
     {
-        return getBounds().left;
+        return getBounds().left + positionAnchor.x;
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Sets the x-coordinate of the top-left corner of the shape's bounding
-     * box. This moves the shape, so calling this method also causes the
-     * extent of the shape to change, keeping with width the same.
+     * Sets the x-coordinate of the anchor point of the shape's bounding
+     * box (the top-left corner, by default). This moves the shape, so
+     * calling this method also causes the extent of the shape to change,
+     * keeping with width the same.
      *
-     * @param x The x-coordinate of the top-left corner of the shape's
+     * @param x The x-coordinate of the anchor point of the shape's
      *          bounding box.
+     * @see #setPositionAnchor(Anchor)
      */
     public void setX(float x)
     {
-        getBounds().offsetTo(x, getBounds().top);
+        getBounds().offsetTo(x - positionAnchor.x, getBounds().top);
         notifyParentOfPositionChange();
         conditionallyRelayout();
     }
@@ -286,92 +338,33 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Gets the y-coordinate of the top-left corner of the shape's bounding
-     * box.
+     * Gets the y-coordinate of the anchor point of the shape's bounding
+     * box (the top-left corner, by default).
      *
-     * @return The y-coordinate of the top-left corner of the shape's
+     * @return The y-coordinate of the anchor point of the shape's
      *         bounding box.
+     * @see #setPositionAnchor(Anchor)
      */
     public float getY()
     {
-        return getBounds().top;
+        return getBounds().top + positionAnchor.y;
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Sets the y-coordinate of the top-left corner of the shape's bounding
-     * box. This moves the shape, so calling this method also causes the
-     * extent of the shape to change, keeping with height the same.
+     * Sets the y-coordinate of the anchor point of the shape's bounding
+     * box (the top-left corner, by default). This moves the shape, so
+     * calling this method also causes the extent of the shape to change,
+     * keeping with height the same.
      *
-     * @param y The y-coordinate of the top-left corner of the shape's
+     * @param y The y-coordinate of the anchor point of the shape's
      *          bounding box.
+     * @see #setPositionAnchor(Anchor)
      */
     public void setY(float y)
     {
-        getBounds().offsetTo(getBounds().left, y);
-        notifyParentOfPositionChange();
-        conditionallyRelayout();
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Gets the x-coordinate of the bottom-right corner (the extent) of the
-     * shape's bounding box.
-     *
-     * @return The x-coordinate of the bottom-right corner of the shape's
-     *         bounding box.
-     */
-    public float getX2()
-    {
-        return getBounds().right;
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Sets the x-coordinate of the bottom-right corner (the extent) of the
-     * shape's bounding box. This does not change the position of the other
-     * corner, so calling this method has the effect of resizing the shape.
-     *
-     * @param x2 The x-coordinate of the bottom-right corner of the shape's
-     *           bounding box.
-     */
-    public void setX2(float x2)
-    {
-        getBounds().right = x2;
-        notifyParentOfPositionChange();
-        conditionallyRelayout();
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Gets the y-coordinate of the bottom-right corner (the extent) of the
-     * shape's bounding box.
-     *
-     * @return The y-coordinate of the bottom-right corner of the shape's
-     *         bounding box.
-     */
-    public float getY2()
-    {
-        return getBounds().bottom;
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Sets the y-coordinate of the bottom-right corner (the extent) of the
-     * shape's bounding box. This does not change the position of the other
-     * corner, so calling this method has the effect of resizing the shape.
-     *
-     * @param y2 The y-coordinate of the bottom-right corner of the shape's
-     *           bounding box.
-     */
-    public void setY2(float y2)
-    {
-        getBounds().bottom = y2;
+        getBounds().offsetTo(getBounds().left, y - positionAnchor.y);
         notifyParentOfPositionChange();
         conditionallyRelayout();
     }
@@ -411,7 +404,9 @@ public abstract class Shape
      */
     public PointF getPosition()
     {
-        return new PointF(bounds.left, bounds.top);
+        return new PointF(
+            bounds.left + positionAnchor.x,
+            bounds.top + positionAnchor.y);
     }
 
 
@@ -424,7 +419,9 @@ public abstract class Shape
      */
     public void setPosition(PointF position)
     {
-        bounds.offsetTo(position.x, position.y);
+        bounds.offsetTo(
+            position.x - positionAnchor.x,
+            position.y - positionAnchor.y);
         notifyParentOfPositionChange();
         conditionallyRelayout();
     }
@@ -441,6 +438,7 @@ public abstract class Shape
     public void setPosition(PointAndAnchor pointAndAnchor)
     {
         bounds = pointAndAnchor.sized(bounds.width(), bounds.height());
+        bounds.offset(-positionAnchor.x, -positionAnchor.y);
         notifyParentOfPositionChange();
         conditionallyRelayout();
     }
@@ -460,36 +458,6 @@ public abstract class Shape
         bounds.offset(dx, dy);
         notifyParentOfPositionChange();
         conditionallyRepaint();
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Gets the origin (top-left corner) of the receiver. Be aware that the
-     * {@link PointF#x} and {@link PointF#y} fields of the returned point may
-     * not be valid if layout of the shapes has not yet occurred.
-     *
-     * @return A {@link PointF} object describing the origin of the shape.
-     */
-    public PointF getExtent()
-    {
-        return new PointF(bounds.right, bounds.bottom);
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Sets the extent (bottom-right corner) of the receiver.
-     *
-     * @param extent A {@link PointF} object describing the extent of the
-     *               shape.
-     */
-    public void setExtent(PointF extent)
-    {
-        bounds.right = extent.x;
-        bounds.bottom = extent.y;
-        notifyParentOfPositionChange();
-        conditionallyRelayout();
     }
 
 

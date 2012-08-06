@@ -7,7 +7,7 @@ import android.graphics.drawable.Drawable;
 //-------------------------------------------------------------------------
 /**
  * A shape that is rendered using an Android {@link Drawable} object.
- * 
+ *
  * @author  Tony Allevato
  * @author  Last changed by $Author$
  * @version $Date$
@@ -25,7 +25,7 @@ public class DrawableShape extends Shape
 	/**
 	 * Creates a new {@code DrawableShape} with the specified drawable and
 	 * bounds.
-	 * 
+	 *
 	 * @param drawable the {@link Drawable}
 	 * @param bounds the bounding rectangle
 	 */
@@ -42,7 +42,7 @@ public class DrawableShape extends Shape
 	// ----------------------------------------------------------
 	/**
 	 * Gets the drawable rendered by this shape.
-	 * 
+	 *
 	 * @return the drawable rendered by this shape
 	 */
 	public Drawable getDrawable()
@@ -54,7 +54,7 @@ public class DrawableShape extends Shape
 	// ----------------------------------------------------------
 	/**
 	 * Sets the drawable rendered by this shape.
-	 * 
+	 *
 	 * @param newDrawable the drawable to be rendered by this shape
 	 */
 	public void setDrawable(Drawable newDrawable)
@@ -69,8 +69,11 @@ public class DrawableShape extends Shape
 	{
 		if (drawable != null)
 		{
-			drawable.setBounds((int) getX(), (int) getY(),
-					(int) getX2(), (int) getY2());
+		    RectF bb = getBounds();
+		    // FIXME: This won't work right if the coordinate system is
+		    // scaled, as with the grid coordinates in sofia-micro
+			drawable.setBounds((int) bb.left, (int)bb.top,
+					(int) bb.right, (int) bb.bottom);
 			drawable.draw(canvas);
 		}
 	}

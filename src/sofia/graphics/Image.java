@@ -1,6 +1,5 @@
 package sofia.graphics;
 
-import java.io.InputStream;
 import sofia.internal.JarResources;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -25,13 +24,10 @@ public class Image
     private int      bitmapId;
     private Class<?> klass;
     private String   fileName;
-    private boolean  useDefault = true;
+    private boolean  useDefault  = true;
+    private boolean  scaleForDpi = true;
 
     private static Bitmap defaultImage;
-
-    private static final String[] EXTENSIONS = {
-        ".png", ".PNG", ".gif", ".GIF", ".jpg", ".JPG", ".JPEG", ".JPEG"
-    };
 
 
     //~ Constructors ..........................................................
@@ -148,6 +144,40 @@ public class Image
 
     // ----------------------------------------------------------
     /**
+     * Determine whether this image will be automatically scaled up or down
+     * based on the current device's pixel density when it is loaded.  The
+     * default is true.  This setting is only useful before the image is
+     * resolved (loaded), since scaling happens at that time.
+     *
+     * @param willScaleForDpi True if this image should be scaled for
+     *                        the current device's pixel density.
+     * @see #resolveAgainstContext(Context)
+     */
+    public void setScaleForDpi(boolean willScaleForDpi)
+    {
+        this.scaleForDpi = willScaleForDpi;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Get whether this image will be automatically scaled up or down
+     * based on the current device's pixel density when it is loaded.  The
+     * default is true.  This setting is only useful before the image is
+     * resolved (loaded), since scaling happens at that time.
+     *
+     * @return True if this image will be scaled for the current device's
+     *         pixel density when it is loaded.
+     * @see #resolveAgainstContext(Context)
+     */
+    public boolean getScaleForDpi()
+    {
+        return scaleForDpi;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
      * Provide an Android resource context to use for loading this
      * image (this must be called before any class/id/file name image
      * will be available).
@@ -170,13 +200,14 @@ public class Image
                 // Find stream based on parameters
                 if (fileName != null)
                 {
-                    bitmap = bitmapForBaseName(fileName, context, null);
+                    bitmap = JarResources.getBitmap(
+                        context, null, fileName, true, scaleForDpi);
 //                    System.out.println(
 //                        "fileName " + fileName + " = " + stream);
                 }
                 else if (klass != null)
                 {
-                    bitmap = bitmapFor(context, klass);
+                    bitmap = bitmapFor(context, klass, scaleForDpi);
 //                    System.out.println(
 //                        "class " + klass.getName() + " = " + stream);
                 }
@@ -187,24 +218,30 @@ public class Image
         {
             if (defaultImage == null)
             {
+                BitmapFactory.Options bfo = null;
+                if (!scaleForDpi)
+                {
+                    bfo = new BitmapFactory.Options();
+                    bfo.inScaled = false;
+                }
                 // Default to generic logo
                 defaultImage = BitmapFactory.decodeResource(
                     context.getResources(),
-                    R.drawable.sofia_default_image);
-                System.out.println("loading default image = " + bitmap);
+                    R.drawable.sofia_default_image, bfo);
+//                System.out.println("loading default image = " + bitmap);
             }
             bitmap = defaultImage;
-            System.out.println("bitmap = default image = " + bitmap);
+//            System.out.println("bitmap = default image = " + bitmap);
         }
 
-        if (bitmap != null)
-        {
-            System.out.println("bitmap " + bitmap + " " + bitmap.getWidth()
-                + "x" + bitmap.getHeight() + " density = " +
-                bitmap.getDensity());
-            System.out.println("target density = " +
-                context.getResources().getDisplayMetrics().densityDpi);
-        }
+//        if (bitmap != null)
+//        {
+//            System.out.println("bitmap " + bitmap + " " + bitmap.getWidth()
+//                + "x" + bitmap.getHeight() + " density = " +
+//                bitmap.getDensity());
+//            System.out.println("target density = " +
+//                context.getResources().getDisplayMetrics().densityDpi);
+//        }
     }
 
 
@@ -379,51 +416,47 @@ public class Image
     //~ Private Methods .......................................................
 
     // ----------------------------------------------------------
-    private static Bitmap bitmapForBaseName(
-        String name, Context context, Class<?> klass)
-    {
-        Bitmap bm = JarResources.getBitmap(context, klass, name);
-        if (bm == null)
-        {
-            for (String extension : EXTENSIONS)
-            {
-                bm = JarResources.getBitmap(
-                    context, klass, name + extension);
-                if (bm != null)
-                {
-                    break;
-                }
-            }
-        }
-        return bm;
-    }
+//    private static Bitmap bitmapForBaseName(
+//        String name, Context context, Class<?> klass)
+//    {
+//        Bitmap bm = JarResources.getBitmap(context, klass, name);
+//        if (bm == null)
+//        {
+//            for (String extension : EXTENSIONS)
+//            {
+//                bm = JarResources.getBitmap(
+//                    context, klass, name + extension);
+//                if (bm != null)
+//                {
+//                    break;
+//                }
+//            }
+//        }
+//        return bm;
+//    }
 
 
     // ----------------------------------------------------------
-    private static Bitmap bitmapFor(Context context, Class<?> cls)
+    private static Bitmap bitmapFor(
+        Context context, Class<?> cls, boolean scaleForDpi)
     {
         Bitmap bm = null;
         while (bm == null && cls != null)
         {
-            bm = bitmapForBaseName(cls.getName(), context, cls);
             if (bm == null)
             {
-                bm = bitmapForBaseName(
-                    cls.getName().toLowerCase(), context, cls);
+                bm = JarResources.getBitmap(
+                    context, cls, cls.getSimpleName(), true, scaleForDpi);
             }
             if (bm == null)
             {
-                bm = bitmapForBaseName(cls.getName().replace('.', '/'),
-                    context, cls);
+                bm = JarResources.getBitmap(context, cls,
+                    cls.getSimpleName().toLowerCase(), true, scaleForDpi);
             }
             if (bm == null)
             {
-                bm = bitmapForBaseName(cls.getSimpleName(), context, cls);
-            }
-            if (bm == null)
-            {
-                bm = bitmapForBaseName(cls.getSimpleName().toLowerCase(),
-                    context, cls);
+                bm = JarResources.getBitmap(context, null,
+                    cls.getName().replace('.', '/'), true, scaleForDpi);
             }
             cls = cls.getSuperclass();
         }
