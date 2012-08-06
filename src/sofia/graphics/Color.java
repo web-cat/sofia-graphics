@@ -2,13 +2,14 @@ package sofia.graphics;
 
 import sofia.app.Persistor;
 import sofia.graphics.internal.ColorPersistor;
+import sofia.util.Random;
 
 //-------------------------------------------------------------------------
 /**
  * Represents a color. Colors are immutable -- once one is created, it is not
  * possible to change its color components. Methods like {@link #lighter} and
  * {@link #darker()} return a new color rather than modify the receiver.
- * 
+ *
  * @author Tony Allevato
  * @version 2012.03.13
  */
@@ -19,7 +20,7 @@ public class Color
 
 	private int rawColor;
 	private float[] hsv;
-	
+
 	private static final double FACTOR = 0.7;
 
 	public static final Color aliceBlue = rgb(0xF0, 0xF8, 0xFF);
@@ -163,7 +164,7 @@ public class Color
 	public static final Color yellow = rgb(0xFF, 0xFF, 0x00);
 	public static final Color yellowGreen = rgb(0x9A, 0xCD, 0x32);
 
-	
+
 	//~ Constructors ..........................................................
 
 	// ----------------------------------------------------------
@@ -172,7 +173,7 @@ public class Color
 		this.rawColor = rawColor;
 	}
 
-	
+
 	//~ Methods ...............................................................
 
 	// ----------------------------------------------------------
@@ -227,7 +228,16 @@ public class Color
 	{
 		return new Color(rawColor);
 	}
-	
+
+
+    // ----------------------------------------------------------
+    public static Color getRandomColor()
+    {
+        Random gen = Random.generator();
+        return fromRawColor(android.graphics.Color.rgb(
+            gen.nextInt(256), gen.nextInt(256), gen.nextInt(256)));
+    }
+
 
 	// ----------------------------------------------------------
 	public int red()
@@ -288,7 +298,7 @@ public class Color
 	    int g = green();
 	    int b = blue();
 	    int alpha = alpha();
-	    
+
 	    int i = (int) (1.0 / (1.0 - FACTOR));
 
 	    if (r == 0 && g == 0 && b == 0)
@@ -299,11 +309,11 @@ public class Color
 	    if (r > 0 && r < i) r = i;
 	    if (g > 0 && g < i) g = i;
 	    if (b > 0 && b < i) b = i;
-	    
+
 	    return rgb(Math.min((int) (r / FACTOR), 255),
 	    		   Math.min((int) (g / FACTOR), 255),
 	    		   Math.min((int) (b / FACTOR), 255),
-	               alpha);		
+	               alpha);
 	}
 
 
@@ -313,7 +323,7 @@ public class Color
 		return rgb(Math.max((int) (red() * FACTOR), 0),
 				   Math.max((int) (green() * FACTOR), 0),
 				   Math.max((int) (blue() * FACTOR), 0),
-				   alpha());		
+				   alpha());
 	}
 
 
@@ -329,8 +339,8 @@ public class Color
 	{
 		return rawColor;
 	}
-	
-	
+
+
 	// ----------------------------------------------------------
 	@Override
 	public boolean equals(Object other)
