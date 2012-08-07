@@ -19,7 +19,7 @@ public class CompositeShape
     extends Shape
     implements ShapeParent
 {
-    private ShapeCollection shapes = new ShapeCollection(this);
+    private ShapeSet shapes = new ShapeSet(this);
     private boolean needsLayout = true;
 
 

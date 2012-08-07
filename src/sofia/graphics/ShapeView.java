@@ -2,14 +2,13 @@ package sofia.graphics;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
-
 import sofia.graphics.internal.GeometryUtils;
 import sofia.graphics.internal.ShapeAnimationManager;
 import sofia.graphics.internal.ShapeSorter;
@@ -45,7 +44,7 @@ public class ShapeView
 {
     //~ Fields ................................................................
 
-    private ShapeCollection shapes;
+    private ShapeSet shapes;
     private boolean needsLayout;
     private boolean surfaceCreated;
     private int defaultBgColor;
@@ -142,7 +141,7 @@ public class ShapeView
         defaultBgColor = array.getColor(0, Color.BLACK);
         array.recycle();
 
-        shapes = new ShapeCollection(this);
+        shapes = new ShapeSet(this);
 //        gestureDetector = new GestureDetector(new ShapeGestureListener());
 
         gestureDetectors = new ArrayList<Object>();
@@ -228,9 +227,41 @@ public class ShapeView
 
 
     // ----------------------------------------------------------
-    public Collection<Shape> getShapes()
+    public Set<Shape> getShapes()
     {
         return shapes;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Get all the shapes of the specified type in this view.
+     *
+     * @param cls Class of objects to look for (passing 'null' will find all
+     *            objects).
+     * @param <MyShape> The type of shape to look for, as specified
+     *                  in the cls parameter.
+     * @return List of all the shapes of the specified type (or any of its
+     *         subtypes) in the view.
+     */
+    public <MyShape extends Shape> Set<MyShape> getShapes(Class<MyShape> cls)
+    {
+        if (cls == null)
+        {
+            @SuppressWarnings("unchecked")
+            Set<MyShape> result = (Set<MyShape>)getShapes();
+            return result;
+        }
+
+        Set<MyShape> result = new TreeSet<MyShape>(shapes.getDrawingOrder());
+        for (Shape shape : getShapes())
+        {
+            if (cls.isInstance(shape))
+            {
+                result.add(cls.cast(shape));
+            }
+        }
+        return result;
     }
 
 
@@ -294,9 +325,28 @@ public class ShapeView
      */
     public Shape getShapeAt(float x, float y)
     {
-        Shape result = null;
-        for (Shape candidate :
-            collisionChecker.getObjectsAt(x, y, Shape.class))
+        return getShapeAt(x, y, null);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Get one shape of the specified type (if any) that overlaps the
+     * specified location.  If multiple shapes overlap that location, the
+     * one "in front" (drawn latest) is returned.
+     * @param x The x-coordinate of the location to check.
+     * @param y The y-coordinate of the location to check.
+     * @param cls Class of shape to look for (passing 'null' will find any
+     *            object).
+     * @param <MyShape> The type of shape to look for, as specified
+     *                  in the cls parameter.
+     * @return The front-most shape at the specified location, or null if none.
+     */
+    public <MyShape extends Shape> MyShape getShapeAt(
+        float x, float y, Class<MyShape> cls)
+    {
+        MyShape result = null;
+        for (MyShape candidate : collisionChecker.getObjectsAt(x, y, cls))
         {
             // If multiple candidates, pick the one drawn last (in front)
             if (result == null
@@ -319,7 +369,26 @@ public class ShapeView
      */
     public Shape getShapeAt(PointF point)
     {
-        return getShapeAt(point.x, point.y);
+        return getShapeAt(point, null);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Get one shape of a specified type (if any) that overlaps the
+     * specified location.  If multiple shapes overlap that location, the
+     * one "in front" (drawn latest) is returned.
+     * @param point The location to check.
+     * @param cls Class of shape to look for (passing 'null' will find any
+     *            object).
+     * @param <MyShape> The type of shape to look for, as specified
+     *                  in the cls parameter.
+     * @return The front-most shape at the specified location, or null if none.
+     */
+    public <MyShape extends Shape> MyShape getShapeAt(
+        PointF point, Class<MyShape> cls)
+    {
+        return getShapeAt(point.x, point.y, cls);
     }
 
 
@@ -332,7 +401,26 @@ public class ShapeView
      */
     public Set<Shape> getShapesAt(float x, float y)
     {
-        return collisionChecker.getObjectsAt(x, y, Shape.class);
+        return getShapesAt(x, y, null);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Get all the shapes of the specified type overlapping the specified
+     * location.
+     * @param x The x-coordinate of the location to check.
+     * @param y The y-coordinate of the location to check.
+     * @param cls Class of shape to look for (passing 'null' will find any
+     *            object).
+     * @param <MyShape> The type of shape to look for, as specified
+     *                  in the cls parameter.
+     * @return A set of all shapes at the specified location.
+     */
+    public <MyShape extends Shape> Set<MyShape> getShapesAt(
+        float x, float y, Class<MyShape> cls)
+    {
+        return collisionChecker.getObjectsAt(x, y, cls);
     }
 
 
@@ -344,7 +432,136 @@ public class ShapeView
      */
     public Set<Shape> getShapesAt(PointF point)
     {
-        return getShapesAt(point.x, point.y);
+        return getShapesAt(point, null);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Get all the shapes of the specified type overlapping the specified
+     * location.
+     * @param point The location to check.
+     * @param cls Class of shape to look for (passing 'null' will find any
+     *            object).
+     * @param <MyShape> The type of shape to look for, as specified
+     *                  in the cls parameter.
+     * @return A set of all shapes at the specified location.
+     */
+    public <MyShape extends Shape> Set<MyShape> getShapesAt(
+        PointF point, Class<MyShape> cls)
+    {
+        return getShapesAt(point.x, point.y, cls);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Return all the shapes that intersect the given shape. This takes the
+     * graphical extent of objects into consideration.
+     *
+     * @param shape A Shape in the view.
+     * @param cls Class of other shapes to find (null or Object.class will
+     *            find all classes).
+     * @param <MyShape> The type of shape to look for, as specified
+     *                  in the cls parameter.
+     * @return A set of shapes that intersect the given shape.
+     */
+    public <MyShape extends Shape> Set<MyShape> getIntersectingShapes(
+        Shape shape, Class<MyShape> cls)
+    {
+        return collisionChecker.getIntersectingObjects(shape, cls);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Return all the shapes that intersect the given shape. This takes the
+     * graphical extent of objects into consideration.
+     *
+     * @param shape A Shape in the view.
+     * @param cls Class of other shapes to find (null or Object.class will
+     *            find all classes).
+     * @param <MyShape> The type of shape to look for, as specified
+     *                  in the cls parameter.
+     * @return A set of shapes that intersect the given shape.
+     */
+    public <MyShape extends Shape> MyShape getIntersectingShape(
+        Shape shape, Class<MyShape> cls)
+    {
+        return collisionChecker.getOneIntersectingObject(shape, cls);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Returns all objects with the logical location within the specified
+     * circle. In other words an object A is within the range of an object B
+     * if the distance between the centre of the two objects is less than r.
+     *
+     * @param x Center of the circle.
+     * @param y Center of the circle.
+     * @param r Radius of the circle.
+     * @param cls Class of objects to look for (null or Object.class will find
+     *            all classes).
+     * @param <MyShape> The type of shape to look for, as specified
+     *                  in the cls parameter.
+     * @return A set of shapes that lie within the given circle.
+     */
+    public <MyShape extends Shape> Set<MyShape> getShapesInRange(
+        float x, float y, float r, Class<MyShape> cls)
+    {
+        return collisionChecker.getObjectsInRange(x, y, r, cls);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Returns the neighbors to the given location. This method only looks at
+     * the logical location and not the extent of objects. Hence it is most
+     * useful in scenarios where objects only span one cell.
+     *
+     * @param shape    The shape whose neighbors will be located.
+     * @param distance Distance in which to look for other objects.
+     * @param diag     Is the distance also diagonal?
+     * @param cls Class of objects to look for (null or Object.class will find
+     *            all classes).
+     * @param <MyShape> The type of shape to look for, as specified
+     *                  in the cls parameter.
+     * @return A collection of all neighbors found.
+     */
+    public <MyShape extends Shape> Set<MyShape> getNeighbors(
+        Shape shape, float distance, boolean diag, Class<MyShape> cls)
+    {
+        if (distance < 0.0)
+        {
+            throw new IllegalArgumentException(
+                "Distance must not be less than 0.0. It was: " + distance);
+        }
+        return collisionChecker.getNeighbors(shape, distance, diag, cls);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Return all objects that intersect a straight line from the location at
+     * a specified angle. The angle is clockwise.
+     *
+     * @param x x-coordinate.
+     * @param y y-coordinate.
+     * @param angle The angle relative to current rotation of the object.
+     *            (0-359).
+     * @param length How far we want to look (in cells).
+     * @param cls Class of objects to look for (null or Object.class will find
+     *            all classes).
+     * @param <MyShape> The type of shape to look for, as specified
+     *                  in the cls parameter.
+     * @return A collection of all objects found.
+     */
+    public <MyShape extends Shape> Set<MyShape> getShapesInDirection(
+        float x, float y, float angle, float length, Class<MyShape> cls)
+    {
+        return collisionChecker.getObjectsInDirection(
+            x, y, angle, length, cls);
     }
 
 

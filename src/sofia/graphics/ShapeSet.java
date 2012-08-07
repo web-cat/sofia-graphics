@@ -3,6 +3,8 @@ package sofia.graphics;
 import sofia.internal.Reversed;
 import java.util.Iterator;
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 import java.util.Comparator;
 import java.util.WeakHashMap;
 import java.util.TreeSet;
@@ -16,15 +18,15 @@ import java.util.TreeSet;
  * @author  Last changed by $Author$
  * @version $Revision$, $Date$
  */
-public class ShapeCollection
-    implements Collection<Shape>
+public class ShapeSet
+    implements Set<Shape>
 {
     private static long SHAPE_ADD_COUNTER = 0;
 
-    private ShapeParent parent;
-    private TreeSet<Shape> treeSet;
-    private WeakHashMap<Shape, Long> shapeAddTimes;
-    private final Comparator<Shape> zorder = new ZIndexComparator();
+    private ShapeParent      parent;
+    private TreeSet<Shape>   treeSet;
+    private Map<Shape, Long> shapeAddTimes;
+    private ZIndexComparator zorder;
 
 
     // ----------------------------------------------------------
@@ -32,10 +34,12 @@ public class ShapeCollection
      * Create a new object.
      * @param parent The shape parent associated with this shape collection.
      */
-    public ShapeCollection(ShapeParent parent)
+    public ShapeSet(ShapeParent parent)
     {
         this.parent = parent;
 
+        zorder  = new ZIndexComparator();
+        zorder.set = this;
         treeSet = new TreeSet<Shape>(zorder);
         shapeAddTimes = new WeakHashMap<Shape, Long>();
     }
@@ -74,9 +78,9 @@ public class ShapeCollection
         for (Shape shape : this)
         {
             shape.setParent(null);
-            shapeAddTimes.remove(shape);
         }
 
+        shapeAddTimes.clear();
         treeSet.clear();
         parent.conditionallyRelayout();
     }
@@ -160,7 +164,10 @@ public class ShapeCollection
             }
         }
 
-        parent.conditionallyRelayout();
+        if (modified)
+        {
+            parent.conditionallyRelayout();
+        }
         return modified;
     }
 
@@ -182,7 +189,10 @@ public class ShapeCollection
             }
         }
 
-        parent.conditionallyRelayout();
+        if (modified)
+        {
+            parent.conditionallyRelayout();
+        }
         return modified;
     }
 
@@ -222,12 +232,48 @@ public class ShapeCollection
     }
 
 
+    // ----------------------------------------------------------
+    /**
+     * Get the shape order for this shape set.
+     * @return The current shape ordering, in the form of a comparator.
+     */
+    public ZIndexComparator getDrawingOrder()
+    {
+        return zorder;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Change the shape order for this shape set.
+     * @param order The new ordering to use.
+     */
+    public void setDrawingOrder(ZIndexComparator order)
+    {
+        order.set = this;
+        TreeSet<Shape> newSet = new TreeSet<Shape>(order);
+        newSet.addAll(treeSet);
+        zorder = order;
+        treeSet = newSet;
+    }
+
+
     //~ Inner classes .........................................................
 
     // ----------------------------------------------------------
-    private class ZIndexComparator implements Comparator<Shape>
+    /**
+     * A comparator for shapes that orders them by increasing z-index,
+     * or for identical z-indices, orders them by increasing insertion
+     * time (i.e., newer shapes are after older shapes).
+     */
+    public static class ZIndexComparator implements Comparator<Shape>
     {
+        private ShapeSet set;
+
         // ----------------------------------------------------------
+        /**
+         * {@inheritDoc}
+         */
         public int compare(Shape shape1, Shape shape2)
         {
             if (shape1.getZIndex() != shape2.getZIndex())
@@ -236,25 +282,40 @@ public class ShapeCollection
             }
             else
             {
-                Long shape1Time = shapeAddTimes.get(shape1);
-                Long shape2Time = shapeAddTimes.get(shape2);
+                return compareTimestamps(shape1, shape2);
+            }
+        }
 
-                if (shape1Time == null && shape2Time == null)
-                {
-                    return 0;
-                }
-                else if (shape1Time == null)
-                {
-                    return -1;
-                }
-                else if (shape2Time == null)
-                {
-                    return 1;
-                }
-                else
-                {
-                    return shape1Time.compareTo(shape2Time);
-                }
+
+        // ----------------------------------------------------------
+        /**
+         * Compare the insertion times of two shapes.
+         * @param shape1 The first shape.
+         * @param shape2 The second shape.
+         * @return -1 if shape1 was added to the ShapeSet before shape2,
+         *         0 if they were added at the same time, or 1 if shape2
+         *         was added before shape1.
+         */
+        protected int compareTimestamps(Shape shape1, Shape shape2)
+        {
+            Long shape1Time = set.shapeAddTimes.get(shape1);
+            Long shape2Time = set.shapeAddTimes.get(shape2);
+
+            if (shape1Time == null && shape2Time == null)
+            {
+                return 0;
+            }
+            else if (shape1Time == null)
+            {
+                return -1;
+            }
+            else if (shape2Time == null)
+            {
+                return 1;
+            }
+            else
+            {
+                return shape1Time.compareTo(shape2Time);
             }
         }
     }
