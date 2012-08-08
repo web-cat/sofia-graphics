@@ -38,8 +38,7 @@ public class ShapeSet
     {
         this.parent = parent;
 
-        zorder  = new ZIndexComparator();
-        zorder.set = this;
+        zorder  = new ZIndexComparator(this);
         treeSet = new TreeSet<Shape>(zorder);
         shapeAddTimes = new WeakHashMap<Shape, Long>();
     }
@@ -269,6 +268,18 @@ public class ShapeSet
     public static class ZIndexComparator implements Comparator<Shape>
     {
         private ShapeSet set;
+
+        // ----------------------------------------------------------
+        /**
+         * Create a new comparator.
+         * @param parent The shape set to use for determining relative
+         *               insertion times.
+         */
+        public ZIndexComparator(ShapeSet parent)
+        {
+            set = parent;
+        }
+
 
         // ----------------------------------------------------------
         /**
