@@ -371,11 +371,13 @@ public class Color
 		StringBuffer buffer = new StringBuffer();
 
 		buffer.append("Color(");
-		buffer.append(red);
+		buffer.append(android.graphics.Color.red(rawColor));
 		buffer.append(", ");
-		buffer.append(green);
+		buffer.append(android.graphics.Color.green(rawColor));
 		buffer.append(", ");
-		buffer.append(blue);
+		buffer.append(android.graphics.Color.blue(rawColor));
+        buffer.append(", ");
+        buffer.append(android.graphics.Color.alpha(rawColor));
 		buffer.append(")");
 
 		return buffer.toString();
