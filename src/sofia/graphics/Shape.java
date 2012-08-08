@@ -281,7 +281,17 @@ public abstract class Shape
             }
 
             GeometryUtils.resolveGeometry(pivot, this);
-            transform.postRotate(rotation, pivot.x, pivot.y);
+            // This places the pivot in absolute coords, but we want
+            // to make it relative to the bounding box.
+            pivot.offset(-getBounds().left, -getBounds().top);
+
+            // The rotation transform is to offset the shape from the
+            // pivot so that the pivot becomes the origin, then rotate,
+            // then move the shape back to its original location.
+            // Note that the pivot is now in bounding-box-relative coords.
+            transform.postTranslate(-pivot.x, -pivot.y);
+            transform.postRotate(rotation);
+            transform.postTranslate(pivot.x, pivot.y);
         }
         inverseTransform = null;
         rotatedCorners = null;

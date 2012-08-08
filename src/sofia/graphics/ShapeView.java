@@ -253,15 +253,19 @@ public class ShapeView
             return result;
         }
 
-        Set<MyShape> result = new TreeSet<MyShape>(shapes.getDrawingOrder());
-        for (Shape shape : getShapes())
+        synchronized (shapes)
         {
-            if (cls.isInstance(shape))
+            Set<MyShape> result =
+                new TreeSet<MyShape>(shapes.getDrawingOrder());
+            for (Shape shape : getShapes())
             {
-                result.add(cls.cast(shape));
+                if (cls.isInstance(shape))
+                {
+                    result.add(cls.cast(shape));
+                }
             }
+            return result;
         }
-        return result;
     }
 
 
@@ -310,6 +314,22 @@ public class ShapeView
             collisionChecker.removeObject(shape);
             shapes.remove(shape);
             shapesWithPositionChanges.remove(shape);
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Removes all shapes currently in this view.
+     */
+    public void clear()
+    {
+        synchronized (shapes)
+        {
+            for (Shape shape : shapes.toArray())
+            {
+                remove(shape);
+            }
         }
     }
 
@@ -880,6 +900,19 @@ public class ShapeView
 
                     if (xform != null)
                     {
+                        // The xform is in bounding-box-relative coords.
+                        // Make a copy.
+                        xform = new Matrix(xform);
+
+                        // Before the rotation, translate the bounding box
+                        // to the origin.
+                        xform.preTranslate(
+                            -shape.getBounds().left, -shape.getBounds().top);
+
+                        // After the rotation, translate the bounding box
+                        // back into its original position.
+                        xform.postTranslate(
+                            shape.getBounds().left, shape.getBounds().top);
                         canvas.save();
                         canvas.concat(xform);
                     }
