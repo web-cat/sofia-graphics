@@ -1,7 +1,5 @@
 package sofia.graphics;
 
-import java.util.Collections;
-import java.util.Set;
 import android.graphics.PointF;
 import android.graphics.RectF;
 
@@ -243,9 +241,9 @@ public abstract class Anchor
      * positioning a shape such that the receiving anchor point on that shape
      * is located at the specified point.
      *
-     * @param x the x-coordinate
-     * @param y the y-coordinate
-     * @return a {@link PointAndAnchor} object
+     * @param x The x-coordinate.
+     * @param y The y-coordinate.
+     * @return A {@link PointAndAnchor} object.
      */
     public final PointAndAnchor anchoredAt(float x, float y)
     {
@@ -258,9 +256,9 @@ public abstract class Anchor
      * Gets a point that represents the location of the receiver on the
      * specified shape.
      *
-     * @param shape the shape
-     * @return a {@link PointD} object that represents the location of the
-     *     receiver on the shape
+     * @param shape The shape.
+     * @return A {@link PointF} object that represents the location of the
+     *         receiver on the shape.
      */
     public final RelativePoint of(Shape shape)
     {
@@ -273,9 +271,8 @@ public abstract class Anchor
      * Gets a point that represents the location of the receiver on the
      * specified canvas.
      *
-     * @param canvas the canvas
-     * @return a {@link PointD} object that represents the location of the
-     *     receiver on the shape canvas
+     * @return A {@link PointF} object that represents the location of the
+     *         receiver on the shape canvas.
      */
     public final RelativePoint ofView()
     {
