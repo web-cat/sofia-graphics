@@ -265,40 +265,40 @@ public class IBSPColChecker implements CollisionChecker
         return r;
     }
 
-    public static void printTree(BSPNode node, String indent, String lead)
-    {
-        if (node == null) {
-            return;
-        }
+//    public static void printTree(BSPNode node, String indent, String lead)
+//    {
+//        if (node == null) {
+//            return;
+//        }
+//
+//        String xx = lead;
+//        xx += node + ": ";
+//        xx += node.getArea();
+//        println(xx);
+//
+//        BSPNode left = node.getLeft();
+//        BSPNode right = node.getRight();
+//
+//        if (left != null) {
+//            String newIndent;
+//            if (right != null) {
+//                newIndent = indent + " |";
+//            }
+//            else {
+//                newIndent = indent + "  ";
+//            }
+//            printTree(left, newIndent, indent + " \\L-");
+//        }
+//
+//        if (right != null) {
+//            printTree(node.getRight(), indent + "  ", indent + " \\R-");
+//        }
+//    }
 
-        String xx = lead;
-        xx += node + ": ";
-        xx += node.getArea();
-        println(xx);
-
-        BSPNode left = node.getLeft();
-        BSPNode right = node.getRight();
-
-        if (left != null) {
-            String newIndent;
-            if (right != null) {
-                newIndent = indent + " |";
-            }
-            else {
-                newIndent = indent + "  ";
-            }
-            printTree(left, newIndent, indent + " \\L-");
-        }
-
-        if (right != null) {
-            printTree(node.getRight(), indent + "  ", indent + " \\R-");
-        }
-    }
-
-    public void printTree()
-    {
-        printTree(bspTree, "", "");
-    }
+//    public void printTree()
+//    {
+//        printTree(bspTree, "", "");
+//    }
 
     public void removeObject(Shape object)
     {
@@ -367,15 +367,15 @@ public class IBSPColChecker implements CollisionChecker
         return node;
     }
 
-    private static int dbgCounter = 0;
-
-    private static void println(String s)
-    {
-        if (dbgCounter < 3000) {
-            System.out.println(s);
-            // dbgCounter++;
-        }
-    }
+//    private static int dbgCounter = 0;
+//
+//    private static void println(String s)
+//    {
+//        if (dbgCounter < 3000) {
+//            System.out.println(s);
+//            // dbgCounter++;
+//        }
+//    }
 
     public static ShapeNode getNodeForShape(Shape object)
     {
