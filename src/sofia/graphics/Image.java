@@ -201,7 +201,7 @@ public class Image
                 if (fileName != null)
                 {
                     bitmap = JarResources.getBitmap(
-                        context, null, fileName, true, scaleForDpi);
+                        context, fileName, true, scaleForDpi, "");
 //                    System.out.println(
 //                        "fileName " + fileName + " = " + stream);
                 }
@@ -416,27 +416,6 @@ public class Image
     //~ Private Methods .......................................................
 
     // ----------------------------------------------------------
-//    private static Bitmap bitmapForBaseName(
-//        String name, Context context, Class<?> klass)
-//    {
-//        Bitmap bm = JarResources.getBitmap(context, klass, name);
-//        if (bm == null)
-//        {
-//            for (String extension : EXTENSIONS)
-//            {
-//                bm = JarResources.getBitmap(
-//                    context, klass, name + extension);
-//                if (bm != null)
-//                {
-//                    break;
-//                }
-//            }
-//        }
-//        return bm;
-//    }
-
-
-    // ----------------------------------------------------------
     private static Bitmap bitmapFor(
         Context context, Class<?> cls, boolean scaleForDpi)
     {
@@ -445,18 +424,26 @@ public class Image
         {
             if (bm == null)
             {
-                bm = JarResources.getBitmap(
-                    context, cls, cls.getSimpleName(), true, scaleForDpi);
+                bm = JarResources.getBitmap(context,
+                    cls.getName().replace('.', '/'), true, scaleForDpi, "");
             }
             if (bm == null)
             {
-                bm = JarResources.getBitmap(context, cls,
-                    cls.getSimpleName().toLowerCase(), true, scaleForDpi);
+                bm = JarResources.getBitmap(context,
+                    cls.getName().toLowerCase().replace('.', '/'),
+                    true, scaleForDpi, "");
             }
             if (bm == null)
             {
-                bm = JarResources.getBitmap(context, null,
-                    cls.getName().replace('.', '/'), true, scaleForDpi);
+                bm = JarResources.getBitmap(context,
+                    cls.getSimpleName(), true, scaleForDpi,
+                    cls.getPackage().getName(), "");
+            }
+            if (bm == null)
+            {
+                bm = JarResources.getBitmap(context,
+                    cls.getSimpleName().toLowerCase(), true, scaleForDpi,
+                    cls.getPackage().getName(), "");
             }
             cls = cls.getSuperclass();
         }
