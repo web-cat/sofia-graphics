@@ -9,12 +9,15 @@ import android.graphics.BitmapFactory;
 /**
  * Represents a single bitmapped image, such as one loaded from a file.
  *
+ * <p>Images retrieved by name or class are searched for using a robust
+ * and flexible search scheme.</p>
+ *
  * <p>This class cannot be a subclass of {@link Bitmap}, since Bitmap is
  * a final class.</p>
  *
  * @author  Stephen Edwards
  * @author  Last changed by $Author: edwards $
- * @version $Date: 2012/08/04 16:32 $
+ * @version $Date: 2012/08/21 14:16 $
  */
 public class Image
 {
@@ -56,8 +59,8 @@ public class Image
 
     // ----------------------------------------------------------
     /**
-     * Create an image from a class.
-     * TODO: Lots of fancy searching that still needs documenting.
+     * Create an image from a class.  The image used will be found
+     * based on the name of the class.
      *
      * @param klass The Java class after which the file is named.
      */
@@ -69,15 +72,35 @@ public class Image
 
     // ----------------------------------------------------------
     /**
-     * Create an image from a file.
-     * TODO: Lots of fancy searching that still needs documenting.
+     * Create an image from a file.  The image will be found by
+     * searching for an appropriate match.
      *
-     * @param fileName The name of the image file.
+     * @param fileName The name of the image file, optionally including
+     *                 an extension.
      */
     public Image(String fileName)
     {
         this.fileName = fileName;
     }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Create an image that is a duplicate of another image
+     * (a copy constructor).
+     * @param other The image to copy.
+     */
+    public Image(Image other)
+    {
+        bitmap = other.bitmap;
+        bitmapId = other.bitmapId;
+        klass = other.klass;
+        fileName = other.fileName;
+        useDefault = other.useDefault;
+        scaleForDpi = other.scaleForDpi;
+    }
+
+
 
 
     // ----------------------------------------------------------
