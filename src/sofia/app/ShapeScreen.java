@@ -27,6 +27,8 @@ public abstract class ShapeScreen
     {
         shapeView = createShapeView(this);
         setContentView(shapeView);
+        
+        shapeView.requestFocus();
     }
 
 

@@ -25,6 +25,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.SurfaceHolder;
@@ -62,6 +63,8 @@ public class ShapeView
     		new MethodDispatcher("onTouchMove", 1);
     private MethodDispatcher onTouchUp =
     		new MethodDispatcher("onTouchUp", 1);
+    private MethodDispatcher onKeyDown =
+    		new MethodDispatcher("onKeyDown", 1);
     private EventForwarder<Object> onScaleForwarder;
     private EventForwarder<Object> onRotateBeginForwarder;
     private EventForwarder<Object> onRotateForwarder;
@@ -166,6 +169,8 @@ public class ShapeView
         unresolvedShapes = new HashSet<Shape>();
         activeCollisions = new HashMap<Shape, Set<Shape>>();
         activeEdgeCollisions = new HashMap<Shape, ViewEdges>();
+        
+        setFocusableInTouchMode(true);
     }
 
 
@@ -1079,6 +1084,23 @@ public class ShapeView
         		eventHandled = method.callMethodOn(ctxt, e);
             }
     	}
+    }
+
+
+    // ----------------------------------------------------------
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent e)
+    {
+        Context ctxt = getContext();
+        if (ctxt != null)
+        {
+        	if (onKeyDown.supportedBy(ctxt, e))
+        	{
+        		onKeyDown.callMethodOn(ctxt, e);
+        	}
+        }
+
+        return super.onKeyDown(keyCode, e);
     }
 
 
