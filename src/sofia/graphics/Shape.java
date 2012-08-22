@@ -467,7 +467,7 @@ public abstract class Shape
     {
         bounds.offset(dx, dy);
         notifyParentOfPositionChange();
-        conditionallyRepaint();
+        conditionallyRelayout();
     }
 
 

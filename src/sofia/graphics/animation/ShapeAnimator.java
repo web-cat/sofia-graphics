@@ -1,19 +1,19 @@
 package sofia.graphics.animation;
 
-import sofia.graphics.Color;
-import sofia.graphics.MotionStep;
-import sofia.graphics.PointAndAnchor;
-import sofia.graphics.ShapeAnimationListener;
-import sofia.graphics.RepeatMode;
-import sofia.graphics.Timings;
-import android.graphics.PointF;
-import android.graphics.RectF;
-import android.view.animation.AccelerateDecelerateInterpolator;
-import android.view.animation.Interpolator;
 import java.util.HashSet;
 import java.util.Set;
+
+import sofia.graphics.Color;
+import sofia.graphics.MotionStep;
+import sofia.graphics.RepeatMode;
 import sofia.graphics.Shape;
+import sofia.graphics.ShapeView;
+import sofia.graphics.Timings;
 import sofia.graphics.internal.GeometryUtils;
+import sofia.internal.MethodDispatcher;
+import android.graphics.PointF;
+import android.graphics.RectF;
+import android.view.animation.Interpolator;
 
 // -------------------------------------------------------------------------
 /**
@@ -44,9 +44,15 @@ public class ShapeAnimator<
     private long delay;
     private RepeatMode repeatMode;
     private boolean removeWhenComplete;
-    private ShapeAnimationListener listener;
     private State state;
     private long lastTime;
+    
+    private MethodDispatcher onAnimationStart =
+    		new MethodDispatcher("onAnimationStart", 1);
+    private MethodDispatcher onAnimationDone =
+    		new MethodDispatcher("onAnimationDone", 1);
+    private MethodDispatcher onAnimationRepeat =
+    		new MethodDispatcher("onAnimationRepeat", 1);
 
     private Set<PropertyTransformer> transformers;
 
@@ -123,23 +129,6 @@ public class ShapeAnimator<
     public AnimatorType delay(long newDelay)
     {
         this.delay = newDelay;
-        return (AnimatorType) this;
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Sets the listener that will be notified of various events that occur
-     * during the animation (such as when it starts, repeats, or ends).
-     *
-     * @param newListener the listener that will be notified of animation
-     *     events
-     * @return this animator, for method chaining
-     */
-    @SuppressWarnings("unchecked")
-    public AnimatorType listener(ShapeAnimationListener newListener)
-    {
-        this.listener = newListener;
         return (AnimatorType) this;
     }
 
@@ -352,6 +341,20 @@ public class ShapeAnimator<
         startTime = System.currentTimeMillis() + delay;
         shape.getParentView().getAnimationManager().enqueue(this);
     }
+    
+    
+    // ----------------------------------------------------------
+    public boolean isPlaying()
+    {
+    	return (state == State.FORWARD || state == State.BACKWARD);
+    }
+
+
+    // ----------------------------------------------------------
+    public boolean isBackward()
+    {
+    	return (state == State.BACKWARD);
+    }
 
 
     // ----------------------------------------------------------
@@ -407,7 +410,7 @@ public class ShapeAnimator<
 
                 if (scaledTime < lastTime)
                 {
-                    postOnAnimationRepeat(false);
+                    postOnAnimationRepeat();
                 }
 
                 break;
@@ -428,12 +431,12 @@ public class ShapeAnimator<
                 if (state == State.FORWARD && scaledTime > duration)
                 {
                     state = State.BACKWARD;
-                    postOnAnimationRepeat(true);
+                    postOnAnimationRepeat();
                 }
                 else if (state == State.BACKWARD && scaledTime < duration)
                 {
                     state = State.FORWARD;
-                    postOnAnimationRepeat(false);
+                    postOnAnimationRepeat();
                 }
 
                 break;
@@ -453,7 +456,7 @@ public class ShapeAnimator<
                 shape.getParentView().remove(shape);
             }
 
-            postOnAnimationEnd();
+            postOnAnimationDone();
         }
 
         lastTime = scaledTime;
@@ -465,45 +468,54 @@ public class ShapeAnimator<
     // ----------------------------------------------------------
     private void postOnAnimationStart()
     {
-        if (listener != null)
-        {
-            shape.getParentView().post(new Runnable() {
-                public void run()
-                {
-                    listener.onAnimationStart(shape);
-                }
-            });
-        }
+    	boolean result = onAnimationStart.callMethodOn(shape, this);
+    	
+    	if (!result)
+    	{
+    		ShapeView view = shape.getParentView();
+    		result = onAnimationStart.callMethodOn(view, this);
+    		
+    		if (!result)
+    		{
+    			onAnimationStart.callMethodOn(view.getContext(), this);
+    		}
+    	}
     }
 
 
     // ----------------------------------------------------------
-    private void postOnAnimationRepeat(final boolean backward)
+    private void postOnAnimationRepeat()
     {
-        if (listener != null)
-        {
-            shape.getParentView().post(new Runnable() {
-                public void run()
-                {
-                    listener.onAnimationRepeat(shape, backward);
-                }
-            });
-        }
+    	boolean result = onAnimationRepeat.callMethodOn(shape, this);
+    	
+    	if (!result)
+    	{
+    		ShapeView view = shape.getParentView();
+    		result = onAnimationRepeat.callMethodOn(view, this);
+    		
+    		if (!result)
+    		{
+    			onAnimationRepeat.callMethodOn(view.getContext(), this);
+    		}
+    	}
     }
 
 
     // ----------------------------------------------------------
-    private void postOnAnimationEnd()
+    private void postOnAnimationDone()
     {
-        if (listener != null)
-        {
-            shape.getParentView().post(new Runnable() {
-                public void run()
-                {
-                    listener.onAnimationEnd(shape);
-                }
-            });
-        }
+    	boolean result = onAnimationDone.callMethodOn(shape, this);
+    	
+    	if (!result)
+    	{
+    		ShapeView view = shape.getParentView();
+    		result = onAnimationDone.callMethodOn(view, this);
+    		
+    		if (!result)
+    		{
+    			onAnimationDone.callMethodOn(view.getContext(), this);
+    		}
+    	}
     }
 
 
