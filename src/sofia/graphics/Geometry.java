@@ -32,7 +32,7 @@ public class Geometry
 	 * Returns the angle, in degrees, between the two points origin and extent.
 	 * Angles increase clockwise since y-coordinates increase in the downward
 	 * direction; this is the opposite of a standard Cartesian coordinate
-	 * system.
+	 * system. The returned angle will be between -180 and 180 degrees.
 	 * 
 	 * @param origin the first point (the origin)
 	 * @param extent the other point
@@ -50,7 +50,8 @@ public class Geometry
 	 * Returns the angle, in degrees, between the two points (x1, y1) and
 	 * (x2, y2). Angles increase clockwise since y-coordinates increase in the
 	 * downward direction; this is the opposite of a standard Cartesian
-	 * coordinate system.
+	 * coordinate system. The returned angle will be between -180 and 180
+	 * degrees.
 	 * 
 	 * @param x1 the x-coordinate of the first point (the origin)
 	 * @param y1 the y-coordinate of the first point (the origin)
