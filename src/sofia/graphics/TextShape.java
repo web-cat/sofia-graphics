@@ -1,20 +1,17 @@
 package sofia.graphics;
 
-import sofia.graphics.animation.TextShapeAnimator;
-import android.view.animation.Interpolator;
-import sofia.graphics.animation.ShapeAnimator;
-import android.content.res.Resources;
-import android.content.Context;
-import android.util.TypedValue;
-import sofia.graphics.animation.TextShapeAnimator;
-import android.graphics.Rect;
 import java.util.Collections;
 import java.util.Set;
-import android.graphics.Paint;
-import android.graphics.Typeface;
-import android.graphics.PointF;
-import android.graphics.RectF;
+
+import sofia.graphics.internal.animation.TypeSizeTransformer;
+import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PointF;
+import android.graphics.Rect;
+import android.graphics.Typeface;
+import android.util.TypedValue;
 
 public class TextShape extends Shape
 {
@@ -50,9 +47,10 @@ public class TextShape extends Shape
     //~ Methods ...............................................................
 
     // ----------------------------------------------------------
-    public TextShapeAnimator animate(long duration)
+    @Override @SuppressWarnings("rawtypes")
+    public Animator<?> animate(long duration)
     {
-        return new TextShapeAnimator(this, duration);
+        return new Animator(duration);
     }
 
 
@@ -308,4 +306,40 @@ public class TextShape extends Shape
             return Collections.<Shape>emptySet();
         }
     }
+
+
+    //~ Animation support classes .............................................
+
+    // ----------------------------------------------------------
+    public class Animator<
+	    ConcreteType extends TextShape.Animator<ConcreteType>>
+	    extends Shape.Animator<ConcreteType>
+	{
+	    //~ Constructors ......................................................
+	
+	    // ----------------------------------------------------------
+	    public Animator(long duration)
+	    {
+	        super(duration);
+	    }
+	
+	
+	    //~ Methods ...........................................................
+
+	    // ----------------------------------------------------------
+	    @Override
+	    public TextShape getShape()
+	    {
+	    	return TextShape.this;
+	    }
+
+
+	    // ----------------------------------------------------------
+	    @SuppressWarnings("unchecked")
+	    public ConcreteType typeSize(double typeSize)
+	    {
+	        addTransformer(new TypeSizeTransformer(getShape(), typeSize));
+	        return (ConcreteType)this;
+	    }
+	}
 }

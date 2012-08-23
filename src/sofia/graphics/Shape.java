@@ -1,12 +1,24 @@
 package sofia.graphics;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import sofia.graphics.internal.GeometryUtils;
+import sofia.graphics.internal.animation.AlphaTransformer;
+import sofia.graphics.internal.animation.AnimationState;
+import sofia.graphics.internal.animation.BoundsTransformer;
+import sofia.graphics.internal.animation.ColorTransformer;
+import sofia.graphics.internal.animation.MotionStepTransformer;
+import sofia.graphics.internal.animation.PositionTransformer;
+import sofia.graphics.internal.animation.RotationTransformer;
+import sofia.graphics.internal.animation.XTransformer;
+import sofia.internal.MethodDispatcher;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
-import sofia.graphics.animation.ShapeAnimator;
-import sofia.graphics.internal.GeometryUtils;
+import android.view.animation.Interpolator;
 
 // -------------------------------------------------------------------------
 /**
@@ -760,10 +772,10 @@ public abstract class Shape
      * @return A {@link ShapeAnimator} that lets the user animate properties
      *         of the receiving shape.
      */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public ShapeAnimator animate(long duration)
+    @SuppressWarnings("rawtypes")
+    public Animator<?> animate(long duration)
     {
-        return new ShapeAnimator(this, duration);
+        return new Animator(duration);
     }
 
 
@@ -1028,5 +1040,519 @@ public abstract class Shape
         sofia.graphics.collision.CollisionChecker collisionChecker)
     {
         this.collisionChecker = collisionChecker;
+    }
+    
+    
+    //~ Animation support classes .............................................
+
+    // -------------------------------------------------------------------------
+    /**
+     * Provides animation support for shapes. Most uses of this class will not
+     * need to reference it directly; for example, an animation can be
+     * constructed and played by chaining method calls directly:
+     * 
+     * <pre>
+     *     shape.animate(500).color(Color.BLUE).alpha(128).play();
+     * </pre>
+     * 
+     * In situations where the type of the class must be referenced directly
+     * (for example, when one is passed to an event handler like
+     * {@code onAnimationDone}), referring to the name of that type can be
+     * somewhat awkward due to the use of some Java generics tricks to ensure
+     * that the methods chain properly. In nearly all cases, it is reasonable
+     * to use "?" wildcards in place of the generic parameters:
+     * 
+     * <pre>
+     *     Shape.Animator<?, ?> anim = shape.animate(500).color(Color.BLUE);
+     *     anim.play();
+     * </pre>
+     *
+     * @param <ShapeType>
+     * @param <ConcreteType>
+     *
+     * @author  Tony Allevato
+     * @version 2011.12.11
+     */
+    public class Animator<ConcreteType extends Animator<ConcreteType>>
+    {
+        private long duration;
+        private Interpolator interpolator;
+        private long startTime;
+        private long delay;
+        private RepeatMode repeatMode;
+        private boolean removeWhenComplete;
+        private AnimationState state;
+        private long lastTime;
+        
+        private MethodDispatcher onAnimationStart =
+        		new MethodDispatcher("onAnimationStart", 1);
+        private MethodDispatcher onAnimationDone =
+        		new MethodDispatcher("onAnimationDone", 1);
+        private MethodDispatcher onAnimationRepeat =
+        		new MethodDispatcher("onAnimationRepeat", 1);
+
+        private Set<PropertyTransformer> transformers;
+
+
+        //~ Constructors ..........................................................
+
+        // ----------------------------------------------------------
+        /**
+         * Creates a new animator for the specified shape. Users should not call
+         * this constructor directly; instead, they should use the
+         * {@link Shape#animate(long)} method to get an animator object.
+         *
+         * @param shape the shape to animate
+         * @param duration the length of one pass of the animation, in milliseconds
+         */
+        protected Animator(long duration)
+        {
+            this.duration = duration;
+            this.delay = 0;
+            this.interpolator = Timings.easeInOut();
+            this.repeatMode = RepeatMode.NONE;
+            this.removeWhenComplete = false;
+            this.state = AnimationState.WAITING;
+
+            transformers = new HashSet<PropertyTransformer>();
+        }
+
+
+        //~ Methods ...............................................................
+
+        // ----------------------------------------------------------
+        /**
+         * Gets the shape that the receiver is animating. Most users will not have
+         * a need to call this method; it is mainly provided for those who need to
+         * subclass an animator to provide animation support for custom properties
+         * of their own shapes.
+         *
+         * @return the shape that the receiver is animating
+         */
+        public Shape getShape()
+        {
+            return Shape.this;
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * Sets the timing function (interpolator) that determines how the
+         * animation behaves during execution. A number of pre-written timing
+         * functions can be found as static methods in the {@link Timings} class.
+         *
+         * @param newInterpolator the timing function (interpolator) that
+         *     determines how the animation behaves during execution
+         * @return this animator, for method chaining
+         */
+        @SuppressWarnings("unchecked")
+        public ConcreteType timing(Interpolator newInterpolator)
+        {
+            this.interpolator = newInterpolator;
+            return (ConcreteType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * Sets the delay, in milliseconds, that the animation will wait after the
+         * {@link #play()} method is called until it actually starts.
+         *
+         * @param newDelay the delay, in milliseconds, before the animation starts
+         * @return this animator, for method chaining
+         */
+        @SuppressWarnings("unchecked")
+        public ConcreteType delay(long newDelay)
+        {
+            this.delay = newDelay;
+            return (ConcreteType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        public ConcreteType position(float x, float y)
+        {
+            return position(new PointF(x, y));
+        }
+
+
+        // ----------------------------------------------------------
+        @SuppressWarnings("unchecked")
+        public ConcreteType position(PointF point)
+        {
+            addTransformer(new PositionTransformer(getShape(), point));
+            return (ConcreteType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        @SuppressWarnings("unchecked")
+        public ConcreteType moveBy(float dx, float dy)
+        {
+        	addTransformer(new MotionStepTransformer(getShape(),
+        			MotionStep.constantVelocity(dx, dy)));
+            return (ConcreteType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        @SuppressWarnings("unchecked")
+        public ConcreteType moveBy(float dx, float dy, float ax, float ay)
+        {
+        	addTransformer(new MotionStepTransformer(getShape(),
+        			MotionStep.constantAcceleration(dx, dy, ax, ay)));
+            return (ConcreteType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        @SuppressWarnings("unchecked")
+        public ConcreteType moveBy(MotionStep motionStep)
+        {
+        	addTransformer(new MotionStepTransformer(getShape(), motionStep));
+            return (ConcreteType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        @SuppressWarnings("unchecked")
+        public ConcreteType y(float y)
+        {
+            addTransformer(new XTransformer(getShape(), y));
+            return (ConcreteType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        @SuppressWarnings("unchecked")
+        public ConcreteType bounds(RectF bounds)
+        {
+            addTransformer(new BoundsTransformer(getShape(), bounds));
+            return (ConcreteType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        @SuppressWarnings("unchecked")
+        public ConcreteType color(Color color)
+        {
+            addTransformer(new ColorTransformer(getShape(), color));
+            return (ConcreteType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * Sets the final alpha (opacity) of the shape when the animation ends.
+         *
+         * @param alpha the final alpha (opacity) of the shape when the animation
+         *     ends, from 0 (fully transparent) to 255 (fully opaque)
+         * @return this animator, for method chaining
+         */
+        @SuppressWarnings("unchecked")
+        public ConcreteType alpha(int alpha)
+        {
+            addTransformer(new AlphaTransformer(getShape(), alpha));
+            return (ConcreteType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * <p>
+         * Sets the final rotation, in degrees clockwise, of the shape when the
+         * animation ends. Negative values will create a counter-clockwise
+         * rotation.
+         * </p><p>
+         * A shape can be made to rotate completely multiple times by
+         * providing values higher than 360 to this method. For example, passing
+         * 360 would cause the shape to make one full rotation over the duration
+         * of the animation, passing 720 would cause it to make two full rotations,
+         * and so forth.
+         * </p>
+         *
+         * @param rotation the final rotation, in degrees clockwise (negative
+         *     values will rotate counter-clockwise)
+         * @return this animator, for method chaining
+         */
+        @SuppressWarnings("unchecked")
+        public ConcreteType rotation(float rotation)
+        {
+            addTransformer(new RotationTransformer(getShape(), rotation));
+            return (ConcreteType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * Causes the animation to repeat until stopped. This method is provided as
+         * shorthand, equivalent to {@code repeatMode(RepeatMode.REPEAT)}.
+         *
+         * @return this animator, for chaining method calls
+         */
+        public ConcreteType repeat()
+        {
+            return repeatMode(RepeatMode.REPEAT);
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * Causes the animation to oscillate (from start to end and back to start)
+         * until stopped. This method is provided as shorthand, equivalent to
+         * {@code repeatMode(RepeatMode.OSCILLATE)}.
+         *
+         * @return this animator, for chaining method calls
+         */
+        public ConcreteType oscillate()
+        {
+            return repeatMode(RepeatMode.OSCILLATE);
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * Sets the repeat mode for this animation. See the {@link RepeatMode}
+         * enumeration for possible values.
+         *
+         * @param mode the repeat mode for the animation
+         * @return this animator, for chaining method calls
+         */
+        @SuppressWarnings("unchecked")
+        public ConcreteType repeatMode(RepeatMode mode)
+        {
+            repeatMode = mode;
+            return (ConcreteType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * <p>
+         * Causes the shape to be automatically removed from its view when the
+         * animation completes. This is useful for animations that cause a shape to
+         * fade out, where you want it to disappear for good when done.
+         * </p><p>
+         * Note that the shape will only be removed if the animation ends on its
+         * own when its time expires; it will not be removed if you end the
+         * animation prematurely by calling {@link Shape#stopAnimation()}. This
+         * also means that this method will have no effect if the animation is
+         * repeating or oscillating.
+         * </p>
+         *
+         * @return this animator, for chaining method calls
+         */
+        @SuppressWarnings("unchecked")
+        public ConcreteType removeWhenComplete()
+        {
+            removeWhenComplete = true;
+            return (ConcreteType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * Adds a property transformer to the list of those that will be applied
+         * each time the animation advances.
+         *
+         * @param transformer the property transformer
+         */
+        protected void addTransformer(PropertyTransformer transformer)
+        {
+            transformers.add(transformer);
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * Starts the animation.
+         */
+        public void play()
+        {
+            for (PropertyTransformer transformer : transformers)
+            {
+                transformer.onStart();
+            }
+
+            startTime = System.currentTimeMillis() + delay;
+            getShape().getParentView().getAnimationManager().enqueue(this);
+        }
+        
+        
+        // ----------------------------------------------------------
+        public boolean isPlaying()
+        {
+        	return (state == AnimationState.FORWARD
+        			|| state == AnimationState.BACKWARD);
+        }
+
+
+        // ----------------------------------------------------------
+        public boolean isBackward()
+        {
+        	return (state == AnimationState.BACKWARD);
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * This method is intended for internal use. Users wishing to stop a
+         * shape's animation should call {@link Shape#stopAnimation()} instead.
+         */
+        public void stop()
+        {
+            state = AnimationState.STOPPED;
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * This method is intended for internal use.
+         *
+         * @param time
+         * @return
+         */
+        public boolean advanceTo(long time)
+        {
+            if (time < startTime)
+            {
+                return false;
+            }
+            else if (state == AnimationState.STOPPED)
+            {
+                return true;
+            }
+            else if (state == AnimationState.WAITING)
+            {
+                state = AnimationState.FORWARD;
+                postOnAnimationStart();
+            }
+
+            float t = 0;
+            long scaledTime = time;
+            boolean ended = false;
+
+            switch (repeatMode)
+            {
+                case NONE:
+                    ended = (time >= startTime + duration);
+                    t = ended ? 1.0f :
+                        (float) ((double) (time - startTime) / duration);
+                    break;
+
+                case REPEAT:
+                    state = AnimationState.FORWARD;
+                    scaledTime = (time - startTime) % duration;
+                    t = (float) ((double) scaledTime / duration);
+
+                    if (scaledTime < lastTime)
+                    {
+                        postOnAnimationRepeat();
+                    }
+
+                    break;
+
+                case OSCILLATE:
+                    scaledTime = (time - startTime) % (2 * duration);
+
+                    if (scaledTime < duration)
+                    {
+                        t = (float) ((double) scaledTime / duration);
+                    }
+                    else
+                    {
+                        t = 1 - (float) ((double) (
+                            scaledTime - duration) / duration);
+                    }
+
+                    if (state == AnimationState.FORWARD && scaledTime > duration)
+                    {
+                        state = AnimationState.BACKWARD;
+                        postOnAnimationRepeat();
+                    }
+                    else if (state == AnimationState.BACKWARD && scaledTime < duration)
+                    {
+                        state = AnimationState.FORWARD;
+                        postOnAnimationRepeat();
+                    }
+
+                    break;
+            }
+
+            float y = interpolator.getInterpolation(t);
+
+            for (PropertyTransformer transformer : transformers)
+            {
+                transformer.transform(y);
+            }
+
+            if (ended)
+            {
+                if (removeWhenComplete)
+                {
+                	getShape().remove();
+                }
+
+                postOnAnimationDone();
+            }
+
+            lastTime = scaledTime;
+
+            return ended;
+        }
+
+
+        // ----------------------------------------------------------
+        private void postOnAnimationStart()
+        {
+        	boolean result = onAnimationStart.callMethodOn(getShape(), this);
+        	
+        	if (!result)
+        	{
+        		ShapeView view = getShape().getParentView();
+        		result = onAnimationStart.callMethodOn(view, this);
+        		
+        		if (!result)
+        		{
+        			onAnimationStart.callMethodOn(view.getContext(), this);
+        		}
+        	}
+        }
+
+
+        // ----------------------------------------------------------
+        private void postOnAnimationRepeat()
+        {
+        	boolean result = onAnimationRepeat.callMethodOn(getShape(), this);
+        	
+        	if (!result)
+        	{
+        		ShapeView view = getShape().getParentView();
+        		result = onAnimationRepeat.callMethodOn(view, this);
+        		
+        		if (!result)
+        		{
+        			onAnimationRepeat.callMethodOn(view.getContext(), this);
+        		}
+        	}
+        }
+
+
+        // ----------------------------------------------------------
+        private void postOnAnimationDone()
+        {
+        	boolean result = onAnimationDone.callMethodOn(getShape(), this);
+        	
+        	if (!result)
+        	{
+        		ShapeView view = getShape().getParentView();
+        		result = onAnimationDone.callMethodOn(view, this);
+        		
+        		if (!result)
+        		{
+        			onAnimationDone.callMethodOn(view.getContext(), this);
+        		}
+        	}
+        }
     }
 }

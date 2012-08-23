@@ -2,9 +2,7 @@ package sofia.graphics.internal;
 
 import java.util.HashMap;
 import sofia.graphics.Shape;
-import java.util.HashSet;
 import sofia.graphics.ShapeView;
-import sofia.graphics.animation.ShapeAnimator;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -21,10 +19,10 @@ public class ShapeAnimationManager extends Thread
     private boolean running;
     private Object animatorToken = new Object();
 
-    private ConcurrentLinkedQueue<ShapeAnimator> animators =
-        new ConcurrentLinkedQueue<ShapeAnimator>();
-    private HashMap<Shape, ShapeAnimator> currentAnimators =
-        new HashMap<Shape, ShapeAnimator>();
+    private ConcurrentLinkedQueue<Shape.Animator<?>> animators =
+        new ConcurrentLinkedQueue<Shape.Animator<?>>();
+    private HashMap<Shape, Shape.Animator<?>> currentAnimators =
+        new HashMap<Shape, Shape.Animator<?>>();
 
 
     // ----------------------------------------------------------
@@ -53,7 +51,7 @@ public class ShapeAnimationManager extends Thread
 
 
     // ----------------------------------------------------------
-    public void enqueue(ShapeAnimator animator)
+    public void enqueue(Shape.Animator<?> animator)
     {
         Shape shape = animator.getShape();
         if (currentAnimators.containsKey(shape))
@@ -74,7 +72,7 @@ public class ShapeAnimationManager extends Thread
     // ----------------------------------------------------------
     public void stop(Shape shape)
     {
-        ShapeAnimator animator = currentAnimators.get(shape);
+    	Shape.Animator<?> animator = currentAnimators.get(shape);
 
         if (animator != null)
         {
@@ -97,11 +95,11 @@ public class ShapeAnimationManager extends Thread
             {
                 long start = System.currentTimeMillis();
 
-                Iterator<ShapeAnimator> it = animators.iterator();
+                Iterator<Shape.Animator<?>> it = animators.iterator();
 
                 while (it.hasNext())
                 {
-                    ShapeAnimator animator = it.next();
+                	Shape.Animator<?> animator = it.next();
                     Shape shape = animator.getShape();
 
                     boolean ended =
@@ -133,11 +131,11 @@ public class ShapeAnimationManager extends Thread
                     }
                     catch (InterruptedException e)
                     {
+                    	// Do nothing.
                     }
                 }
 
                 end = System.currentTimeMillis();
-                //System.out.println("Frame time in msec = " + (end - start));
             }
         }
     }

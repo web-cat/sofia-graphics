@@ -3,8 +3,6 @@ package sofia.graphics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sofia.graphics.animation.ShapeAnimator;
-
 import android.graphics.RectF;
 import android.util.SparseArray;
 import android.view.KeyEvent;
@@ -164,7 +162,7 @@ public class DirectionalPad extends ImageShape
 	 * 
 	 * @param animator the animator
 	 */
-	public void onAnimationDone(ShapeAnimator animator)
+	public void onAnimationDone(Shape.Animator<?> animator)
 	{
 		isFadingIn = false;
 	}

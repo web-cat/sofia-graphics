@@ -1,6 +1,6 @@
 package sofia.graphics;
 
-import sofia.graphics.animation.StrokedShapeAnimator;
+import sofia.graphics.internal.animation.StrokeWidthTransformer;
 import android.graphics.Paint;
 
 //-------------------------------------------------------------------------
@@ -34,10 +34,10 @@ public abstract class StrokedShape
     //~ Public Methods ........................................................
 
     // ----------------------------------------------------------
-    @SuppressWarnings("rawtypes")
-    public StrokedShapeAnimator animate(long duration)
+	@SuppressWarnings("rawtypes")
+    public Animator<?> animate(long duration)
     {
-        return new StrokedShapeAnimator(this, duration);
+        return new Animator(duration);
     }
 
 
@@ -135,5 +135,49 @@ public abstract class StrokedShape
         strokeCap = Paint.Cap.BUTT;
         strokeJoin = Paint.Join.MITER;
         strokeMiter = 0.0;
+    }
+    
+    
+    //~ Animation support classes .............................................
+    
+    // -------------------------------------------------------------------------
+    /**
+     * Write a one-sentence summary of your class here.
+     * Follow it with additional details about its purpose, what abstraction
+     * it represents, and how to use it.
+     *
+     * @author  Tony Allevato
+     * @version Dec 4, 2011
+     */
+    public class Animator<
+        AnimatorType extends StrokedShape.Animator<AnimatorType>>
+        extends Shape.Animator<AnimatorType>
+    {
+        //~ Constructors ..........................................................
+
+        // ----------------------------------------------------------
+        public Animator(long duration)
+        {
+            super(duration);
+        }
+
+
+        //~ Methods ...............................................................
+
+        // ----------------------------------------------------------
+        @Override
+        public StrokedShape getShape()
+        {
+        	return StrokedShape.this;
+        }
+
+
+        // ----------------------------------------------------------
+        @SuppressWarnings("unchecked")
+        public AnimatorType strokeWidth(double strokeWidth)
+        {
+            addTransformer(new StrokeWidthTransformer(getShape(), strokeWidth));
+            return (AnimatorType) this;
+        }
     }
 }

@@ -1,5 +1,4 @@
-package sofia.graphics.animation;
-
+package sofia.graphics;
 
 // -------------------------------------------------------------------------
 /**

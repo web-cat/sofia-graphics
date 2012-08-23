@@ -1,12 +1,7 @@
 package sofia.graphics;
 
-import android.view.animation.Interpolator;
-import sofia.graphics.animation.ShapeAnimator;
-import sofia.graphics.animation.FillableShapeAnimator;
+import sofia.graphics.internal.animation.FillColorTransformer;
 import android.graphics.Paint;
-import android.graphics.Canvas;
-import android.graphics.PointF;
-import android.graphics.RectF;
 
 // -------------------------------------------------------------------------
 /**
@@ -45,9 +40,9 @@ public abstract class FillableShape extends StrokedShape
 
     // ----------------------------------------------------------
     @SuppressWarnings("rawtypes")
-    public FillableShapeAnimator animate(long duration)
+    public Animator<?> animate(long duration)
     {
-        return new FillableShapeAnimator(this, duration);
+        return new Animator(duration);
     }
 
 
@@ -97,4 +92,40 @@ public abstract class FillableShape extends StrokedShape
         paint.setColor(getFillColor().toRawColor());
         return paint;
     }
+
+
+    //~ Animation support classes .............................................
+
+    // ----------------------------------------------------------
+    public class Animator<
+	    ConcreteType extends FillableShape.Animator<ConcreteType>>
+	    extends StrokedShape.Animator<ConcreteType>
+	{
+	    //~ Constructors ......................................................
+	
+	    // ----------------------------------------------------------
+	    public Animator(long duration)
+	    {
+	        super(duration);
+	    }
+	
+	
+	    //~ Methods ...........................................................
+	
+	    // ----------------------------------------------------------
+	    @Override
+	    public FillableShape getShape()
+	    {
+	    	return FillableShape.this;
+	    }
+
+
+	    // ----------------------------------------------------------
+	    @SuppressWarnings("unchecked")
+	    public ConcreteType fillColor(Color color)
+	    {
+	        addTransformer(new FillColorTransformer(getShape(), color));
+	        return (ConcreteType) this;
+	    }
+	}
 }
