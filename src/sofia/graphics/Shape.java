@@ -1510,11 +1510,15 @@ public abstract class Shape
         	if (!result)
         	{
         		ShapeView view = getShape().getParentView();
-        		result = onAnimationStart.callMethodOn(view, this);
         		
-        		if (!result)
+        		if (view != null)
         		{
-        			onAnimationStart.callMethodOn(view.getContext(), this);
+	        		result = onAnimationStart.callMethodOn(view, this);
+	        		
+	        		if (!result)
+	        		{
+	        			onAnimationStart.callMethodOn(view.getContext(), this);
+	        		}
         		}
         	}
         }
@@ -1528,11 +1532,15 @@ public abstract class Shape
         	if (!result)
         	{
         		ShapeView view = getShape().getParentView();
-        		result = onAnimationRepeat.callMethodOn(view, this);
-        		
-        		if (!result)
+
+        		if (view != null)
         		{
-        			onAnimationRepeat.callMethodOn(view.getContext(), this);
+	        		result = onAnimationRepeat.callMethodOn(view, this);
+	        		
+	        		if (!result)
+	        		{
+	        			onAnimationRepeat.callMethodOn(view.getContext(), this);
+	        		}
         		}
         	}
         }
@@ -1546,11 +1554,15 @@ public abstract class Shape
         	if (!result)
         	{
         		ShapeView view = getShape().getParentView();
-        		result = onAnimationDone.callMethodOn(view, this);
-        		
-        		if (!result)
+
+        		if (view != null)
         		{
-        			onAnimationDone.callMethodOn(view.getContext(), this);
+	        		result = onAnimationDone.callMethodOn(view, this);
+	        		
+	        		if (!result)
+	        		{
+	        			onAnimationDone.callMethodOn(view.getContext(), this);
+	        		}
         		}
         	}
         }
