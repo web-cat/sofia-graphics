@@ -331,7 +331,7 @@ public class ShapeView
     {
         synchronized (shapes)
         {
-            for (Shape shape : shapes.toArray())
+            for (Shape shape : shapes)
             {
                 remove(shape);
             }
