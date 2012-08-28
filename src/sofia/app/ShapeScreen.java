@@ -122,6 +122,16 @@ public abstract class ShapeScreen
     {
         shapeView.remove(shape);
     }
+    
+    
+    // ----------------------------------------------------------
+    /**
+     * Removes all shapes currently on the screen.
+     */
+    public void clear()
+    {
+    	shapeView.clear();
+    }
 
 
     // ----------------------------------------------------------
