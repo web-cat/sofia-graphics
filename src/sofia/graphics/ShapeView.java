@@ -281,6 +281,8 @@ public class ShapeView
      */
     public void add(Shape shape)
     {
+    	boolean needsRepaint = false;
+
         synchronized (shapes)
         {
             shapes.add(shape);
@@ -297,12 +299,18 @@ public class ShapeView
                 {
                     unresolvedShapes.add(shape);
                 }
-                repaint();
+                
+                needsRepaint = true;
             }
             else
             {
                 unresolvedShapes.add(shape);
             }
+        }
+
+        if (needsRepaint)
+        {
+        	repaint();
         }
     }
 
@@ -331,11 +339,19 @@ public class ShapeView
     {
         synchronized (shapes)
         {
-            for (Shape shape : shapes)
+        	// Need to capture this outside the set to prevent concurrent
+        	// modification exceptions.
+
+        	Shape[] shapeArray = new Shape[shapes.size()];
+        	shapes.toArray(shapeArray);
+
+            for (Shape shape : shapeArray)
             {
                 remove(shape);
             }
         }
+        
+        repaint();
     }
 
 
