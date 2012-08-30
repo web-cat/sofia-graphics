@@ -337,21 +337,10 @@ public class ShapeView
      */
     public void clear()
     {
-        synchronized (shapes)
-        {
-        	// Need to capture this outside the set to prevent concurrent
-        	// modification exceptions.
-
-        	Shape[] shapeArray = new Shape[shapes.size()];
-        	shapes.toArray(shapeArray);
-
-            for (Shape shape : shapeArray)
-            {
-                remove(shape);
-            }
-        }
-        
-        repaint();
+    	synchronized (shapes)
+    	{
+    		shapes.clear();
+    	}
     }
 
 
