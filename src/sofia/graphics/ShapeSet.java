@@ -204,9 +204,10 @@ public class ShapeSet
 
 
     // ----------------------------------------------------------
-    public Object[] toArray()
+    public Shape[] toArray()
     {
-        return treeSet.toArray();
+        Shape[] result = new Shape[treeSet.size()];
+        return toArray(result);
     }
 
 
