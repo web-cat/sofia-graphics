@@ -101,8 +101,6 @@ public class Image
     }
 
 
-
-
     // ----------------------------------------------------------
     /**
      * Get a new Image object that renders as the default Sofia
