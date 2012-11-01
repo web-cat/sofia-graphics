@@ -879,7 +879,7 @@ public class ShapeView
                     {
                         background.draw(canvas);
                     }
-                    else
+                    else if (backgroundColor != null)
                     {
                         canvas.drawColor(backgroundColor.toRawColor());
                     }
