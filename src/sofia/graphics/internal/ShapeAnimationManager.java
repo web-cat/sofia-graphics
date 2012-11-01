@@ -13,8 +13,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @author  Tony Allevato
  * @version 2011.12.04
  */
-public class ShapeAnimationManager extends Thread
+public class ShapeAnimationManager
 {
+	public static final String TESTING_MODE_PROPERTY =
+			"sofia.graphics.testingMode";
+
     private ShapeView view;
     private boolean running;
     private Object animatorToken = new Object();
@@ -53,19 +56,30 @@ public class ShapeAnimationManager extends Thread
     // ----------------------------------------------------------
     public void enqueue(Shape.Animator<?> animator)
     {
-        Shape shape = animator.getShape();
-        if (currentAnimators.containsKey(shape))
-        {
-            currentAnimators.get(shape).stop();
-        }
-
-        currentAnimators.put(shape, animator);
-        animators.offer(animator);
-
-        synchronized (animatorToken)
-        {
-            animatorToken.notify();
-        }
+    	if (isTestingMode())
+    	{
+    		// Just run the animator instantaneously.
+    		
+    		long endTime = System.currentTimeMillis()
+    				+ animator.getDelay() + animator.getDuration();
+    		animator.advanceTo(endTime);
+    	}
+    	else
+    	{
+	        Shape shape = animator.getShape();
+	        if (currentAnimators.containsKey(shape))
+	        {
+	            currentAnimators.get(shape).stop();
+	        }
+	
+	        currentAnimators.put(shape, animator);
+	        animators.offer(animator);
+	
+	        synchronized (animatorToken)
+	        {
+	            animatorToken.notify();
+	        }
+    	}
     }
 
 
@@ -82,62 +96,87 @@ public class ShapeAnimationManager extends Thread
 
 
     // ----------------------------------------------------------
-    @Override
-    public void run()
+    public void start()
     {
-        view.internalSetAutoRepaintForThread(false);
+    	if (!isTestingMode())
+    	{
+    		new ProductionThread().start();
+    	}
+    }
 
-        while (running)
-        {
-            waitForSignal();
 
-            while (!animators.isEmpty())
-            {
-                long start = System.currentTimeMillis();
+    // ----------------------------------------------------------
+    private boolean isTestingMode()
+    {
+    	String testingProp = System.getProperty(
+    			TESTING_MODE_PROPERTY, "false");
+    	
+    	return Boolean.parseBoolean(testingProp);    	
+    }
 
-                Iterator<Shape.Animator<?>> it = animators.iterator();
 
-                while (it.hasNext())
-                {
-                	Shape.Animator<?> animator = it.next();
-                    Shape shape = animator.getShape();
-
-                    boolean ended =
-                        animator.advanceTo(start);
-
-                    if (ended)
-                    {
-                        it.remove();
-
-                        if (currentAnimators.get(shape) == animator)
-                        {
-                            currentAnimators.remove(shape);
-                        }
-                    }
-                }
-
-                view.repaint();
-
-                long end = System.currentTimeMillis();
-                long length = end - start;
-
-                long FRAME_TIME = 20;
-
-                if (length < FRAME_TIME)
-                {
-                    try
-                    {
-                        Thread.sleep(FRAME_TIME - length);
-                    }
-                    catch (InterruptedException e)
-                    {
-                    	// Do nothing.
-                    }
-                }
-
-                end = System.currentTimeMillis();
-            }
-        }
+    // ----------------------------------------------------------
+    private class ProductionThread extends Thread
+    {
+        // ----------------------------------------------------------
+	    @Override
+	    public void run()
+	    {
+	        while (running)
+	        {
+	            waitForSignal();
+	            view.internalSetAutoRepaintForThread(false);
+	
+	            while (!animators.isEmpty())
+	            {
+	                long start = System.currentTimeMillis();
+	
+	                Iterator<Shape.Animator<?>> it = animators.iterator();
+	
+	                while (it.hasNext())
+	                {
+	                	Shape.Animator<?> animator = it.next();
+	                    Shape shape = animator.getShape();
+	
+	                    boolean ended =
+	                        animator.advanceTo(start);
+	
+	                    if (ended)
+	                    {
+	                        it.remove();
+	
+	                        if (currentAnimators.get(shape) == animator)
+	                        {
+	                            currentAnimators.remove(shape);
+	                        }
+	                    }
+	                }
+	
+	                view.repaint();
+	
+	                long end = System.currentTimeMillis();
+	                long length = end - start;
+	
+	                long FRAME_TIME = 20;
+	
+	                if (length < FRAME_TIME)
+	                {
+	                    try
+	                    {
+	                        Thread.sleep(FRAME_TIME - length);
+	                    }
+	                    catch (InterruptedException e)
+	                    {
+	                    	// Do nothing.
+	                    }
+	                }
+	
+	                end = System.currentTimeMillis();
+	            }
+	
+	            view.internalSetAutoRepaintForThread(true);
+	        }
+	    }
     }
 
 
