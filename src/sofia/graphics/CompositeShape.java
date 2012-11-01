@@ -17,7 +17,7 @@ import android.graphics.Canvas;
  */
 public class CompositeShape
     extends Shape
-    implements ShapeParent
+    implements ShapeParent, ShapeManipulating
 {
     private ShapeSet shapes = new ShapeSet(this);
     private boolean needsLayout = true;
@@ -73,6 +73,33 @@ public class CompositeShape
 
 
     // ----------------------------------------------------------
+    /**
+     * Clears all of the shapes from this composite.
+     */
+    public void clear()
+    {
+        synchronized (shapes)
+        {
+            shapes.clear();
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    public void onShapesAdded(Iterable<? extends Shape> addedShapes)
+    {
+    	// TODO
+    }
+
+
+    // ----------------------------------------------------------
+    public void onShapesRemoved(Iterable<? extends Shape> removedShapes)
+    {
+    	// TODO    	
+    }
+
+
+    // ----------------------------------------------------------
     public Collection<Shape> getShapes()
     {
         return shapes;
@@ -90,7 +117,6 @@ public class CompositeShape
     public void repaint()
     {
         // TODO Auto-generated method stub
-
     }
 
 
