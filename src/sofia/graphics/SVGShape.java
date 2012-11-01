@@ -12,7 +12,7 @@ import com.larvalabs.svgandroid.SVGParser;
 
 //-------------------------------------------------------------------------
 /**
- * A shape that displays an image loaded from an SVG {@code R.raw} resource.
+ * A shape that displays an SVG image loaded from a {@code R.raw} resource.
  * 
  * @author  Tony Allevato
  * @author  Last changed by $Author$
@@ -20,7 +20,7 @@ import com.larvalabs.svgandroid.SVGParser;
  */
 public class SVGShape extends DrawableShape
 {
-	//~ Instance/static variables .............................................
+	//~ Fields ................................................................
 
 	private static SparseArray<Drawable> svgCache =
 			new SparseArray<Drawable>();
@@ -32,8 +32,8 @@ public class SVGShape extends DrawableShape
 
     // ----------------------------------------------------------
 	/**
-	 * Creates a new {@code SVGShape} with the specified SVG resource and
-	 * bounds.
+	 * Creates a {@code SVGShape} using an SVG resource, stretched to fit the
+	 * specified bounds.
 	 * 
 	 * @param rawResourceId the {@code R.raw} resource that contains the SVG
 	 *     data
@@ -42,7 +42,6 @@ public class SVGShape extends DrawableShape
 	public SVGShape(int rawResourceId, RectF bounds)
 	{
 		super(null, bounds);
-		
 		this.rawResourceId = rawResourceId;
 	}
 	

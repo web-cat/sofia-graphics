@@ -322,7 +322,7 @@ public class Image
      * @throws IllegalArgumentException If x or y exceed the bitmap's bounds.
      * @throws IllegalStateException If the bitmap has not yet been resolved.
      */
-    public Color getPixel (int x, int y)
+    public Color getPixel(int x, int y)
     {
         if (bitmap == null)
         {
@@ -376,7 +376,7 @@ public class Image
      *         bounds.
      * @throws IllegalStateException If the bitmap has not yet been resolved.
      */
-    public void setPixel (int x, int y, Color color)
+    public void setPixel(int x, int y, Color color)
     {
         if (bitmap == null)
         {
@@ -399,7 +399,7 @@ public class Image
      * @throws IllegalArgumentException If the pixels array is the wrong size,
      *         or null.
      */
-    public void setPixels (Color[] pixels)
+    public void setPixels(Color[] pixels)
     {
         if (bitmap == null)
         {

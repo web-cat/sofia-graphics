@@ -5,7 +5,7 @@ import android.util.FloatMath;
 
 //-------------------------------------------------------------------------
 /**
- * This class contains various geometry-related helper methods.
+ * This class contains various geometry-related static helper methods.
  *
  * @author  Tony Allevato
  * @author  Last changed by $Author$
@@ -37,7 +37,8 @@ public class Geometry
 	 * @param origin the first point (the origin)
 	 * @param extent the other point
 	 * 
-	 * @return the angle between origin and extent, in degrees
+	 * @return the angle between origin and extent, in degrees clockwise,
+	 *     between -180 and 180
 	 */
 	public static float angleBetween(PointF origin, PointF extent)
 	{
@@ -58,7 +59,8 @@ public class Geometry
 	 * @param x2 the x-coordinate of the other point
 	 * @param y2 the y-coordinate of the other point
 	 * 
-	 * @return the angle between (x1, y1) and (x2, y2), in degrees
+	 * @return the angle between (x1, y1) and (x2, y2), in degrees clockwise,
+	 *     between -180 and 180
 	 */
 	public static float angleBetween(float x1, float y1, float x2, float y2)
 	{
@@ -109,7 +111,7 @@ public class Geometry
 	 * distance.
 	 * 
 	 * @param origin the point to be translated
-	 * @param angle the angle by which to move the point
+	 * @param angle the angle by which to move the point, in degrees clockwise
 	 * @param distance the distance to move the point
 	 * 
 	 * @return the translated point

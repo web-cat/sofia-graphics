@@ -1,15 +1,14 @@
 package sofia.graphics;
 
-import android.view.animation.Interpolator;
-import android.view.animation.CycleInterpolator;
-import android.view.animation.AnticipateOvershootInterpolator;
-import android.view.animation.OvershootInterpolator;
-import android.view.animation.BounceInterpolator;
-import android.view.animation.AnticipateInterpolator;
-import android.view.animation.LinearInterpolator;
-import android.view.animation.DecelerateInterpolator;
-import android.view.animation.AccelerateInterpolator;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.AnticipateInterpolator;
+import android.view.animation.AnticipateOvershootInterpolator;
+import android.view.animation.BounceInterpolator;
+import android.view.animation.CycleInterpolator;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.OvershootInterpolator;
 
 // -------------------------------------------------------------------------
 /**
@@ -25,7 +24,7 @@ import android.view.animation.AccelerateDecelerateInterpolator;
  */
 public class Timings
 {
-    //~ Static variables ......................................................
+    //~ Fields ................................................................
 
     // These fields act as singletons for the interpolators returned by the
     // no-argument methods below. The versions of the methods that take
@@ -473,6 +472,22 @@ public class Timings
 
 
     // ----------------------------------------------------------
+    /**
+     * <p>
+     * A timing function that elastically snaps from the start value.
+     * </p><p>
+     * This timing function is represented by
+     * {@code TODO}
+     * where <em>t</em> is the current time in the animation normalized to the
+     * range [0.0, 1.0].
+     * </p><p>
+     * This timing function corresponds to {@link ElasticInInterpolator}
+     * (which is a custom interpolator provided by Sofia, not one built into
+     * the Android API).
+     * </p>
+     * 
+     * @return a timing function that causes the animation to snap in
+     */
     public static ElasticInInterpolator elasticIn()
     {
         if (elasticIn == null)
@@ -485,7 +500,24 @@ public class Timings
 
 
     // ----------------------------------------------------------
-    public static Interpolator elasticOut()
+    /**
+     * <p>
+     * A timing function that elastically snaps back when it reaches the end
+     * value.
+     * </p><p>
+     * This timing function is represented by
+     * {@code TODO}
+     * where <em>t</em> is the current time in the animation normalized to the
+     * range [0.0, 1.0].
+     * </p><p>
+     * This timing function corresponds to {@link ElasticOutInterpolator}
+     * (which is a custom interpolator provided by Sofia, not one built into
+     * the Android API).
+     * </p>
+     * 
+     * @return a timing function that causes the animation to snap back
+     */
+    public static ElasticOutInterpolator elasticOut()
     {
         if (elasticOut == null)
         {
@@ -497,7 +529,25 @@ public class Timings
 
 
     // ----------------------------------------------------------
-    public static Interpolator elasticInOut()
+    /**
+     * <p>
+     * A timing function that elastically snaps in from the start value and
+     * then snaps back again when it reaches the end value.
+     * </p><p>
+     * This timing function is represented by
+     * {@code TODO}
+     * where <em>t</em> is the current time in the animation normalized to the
+     * range [0.0, 1.0].
+     * </p><p>
+     * This timing function corresponds to {@link ElasticInOutInterpolator}
+     * (which is a custom interpolator provided by Sofia, not one built into
+     * the Android API).
+     * </p>
+     * 
+     * @return a timing function that causes the animation to snap at the
+     *     beginning and end
+     */
+    public static ElasticInOutInterpolator elasticInOut()
     {
         if (elasticInOut == null)
         {

@@ -5,14 +5,68 @@ import android.graphics.Canvas;
 import android.graphics.PointF;
 import android.graphics.RectF;
 
+//-------------------------------------------------------------------------
+/**
+ * A shape that is drawn as a line between two points.
+ * 
+ * @author  Tony Allevato
+ * @version 2011.09.29
+ */
 public class LineShape extends StrokedShape
 {
+	//~ Constructors ..........................................................
+
     // ----------------------------------------------------------
+	/**
+	 * Creates a new {@code LineShape} with default position and size.
+	 */
+    public LineShape()
+    {
+        super();
+    }
+
+
+    // ----------------------------------------------------------
+	/**
+	 * Creates a new {@code LineShape} between two points.
+	 * 
+	 * @param bounds the bounding rectangle of the line
+	 */
+    public LineShape(PointF point1, PointF point2)
+    {
+        setBounds(new RectF(point1.x, point1.y, point2.x, point2.y));
+    }
+
+
+    // ----------------------------------------------------------
+	/**
+	 * Creates a new {@code LineShape} between two points.
+	 * 
+	 * @param x1 the x-coordinate of the first endpoint
+	 * @param y1 the y-coordinate of the first endpoint
+	 * @param x2 the x-coordinate of the second endpoint
+	 * @param y2 the y-coordinate of the second endpoint
+	 */
+    public LineShape(float x1, float y1, float x2, float y2)
+    {
+        setBounds(new RectF(x1, y1, x2, y2));
+    }
+
+
+    // ----------------------------------------------------------
+	/**
+	 * Creates a new {@code LineShape} that starts at the top-left corner of
+	 * the specified rectangle and ends at the bottom-right corner.
+	 * 
+	 * @param bounds the bounding rectangle of the line
+	 */
     public LineShape(RectF bounds)
     {
         setBounds(bounds);
     }
 
+
+    //~ Methods ...............................................................
 
     // ----------------------------------------------------------
     @Override
