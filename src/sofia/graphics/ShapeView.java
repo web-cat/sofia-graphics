@@ -18,7 +18,6 @@ import sofia.view.RotateGestureDetector;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.graphics.RectF;
@@ -41,18 +40,18 @@ import android.view.SurfaceView;
  */
 public class ShapeView
     extends SurfaceView
-    implements ShapeParent
+    implements ShapeParent, ShapeManipulating, ShapeQuerying
 {
     //~ Fields ................................................................
 
     private ShapeSet shapes;
     private boolean needsLayout;
     private boolean surfaceCreated;
-    private int defaultBgColor;
+    private Color backgroundColor;
     private List<Object> gestureDetectors;
     //private GestureDetector gestureDetector;
     private boolean autoRepaint;
-    private Set<Thread> threadsBlockingRepaint;
+    private Set<Long> threadsBlockingRepaint;
     private ShapeAnimationManager animationManager;
     private RepaintThread repaintThread;
 
@@ -131,7 +130,7 @@ public class ShapeView
     // ----------------------------------------------------------
     private void init()
     {
-        threadsBlockingRepaint = new HashSet<Thread>();
+        threadsBlockingRepaint = new HashSet<Long>();
 
         getHolder().addCallback(new SurfaceHolderCallback());
 
@@ -141,7 +140,8 @@ public class ShapeView
                 android.R.attr.textColorPrimary,
             });
 
-        defaultBgColor = array.getColor(0, Color.BLACK);
+        backgroundColor = Color.fromRawColor(
+        		array.getColor(0, android.graphics.Color.BLACK));
         array.recycle();
 
         shapes = new ShapeSet(this);
@@ -207,7 +207,7 @@ public class ShapeView
      */
     public synchronized void internalSetAutoRepaintForThread(boolean value)
     {
-        Thread current = Thread.currentThread();
+        long current = Thread.currentThread().getId();
 
         if (value)
         {
@@ -232,6 +232,13 @@ public class ShapeView
 
 
     // ----------------------------------------------------------
+    /**
+     * Gets a set that represents all the shapes currently in this view. Note
+     * that this set is not a copy of the view's shape set; changes to this set
+     * will <em>directly affect</em> the view.
+     * 
+     * @return a set that represents all the shapes currently in this view
+     */
     public Set<Shape> getShapes()
     {
         return shapes;
@@ -281,36 +288,9 @@ public class ShapeView
      */
     public void add(Shape shape)
     {
-    	boolean needsRepaint = false;
-
         synchronized (shapes)
         {
             shapes.add(shape);
-
-            if (getWidth() != 0 && getHeight() != 0)
-            {
-                GeometryUtils.resolveGeometry(shape.getBounds(), shape);
-                if (GeometryUtils.isGeometryResolved(shape.getBounds()))
-                {
-                    collisionChecker.addObject(shape);
-                    shapesWithPositionChanges.add(shape);
-                }
-                else
-                {
-                    unresolvedShapes.add(shape);
-                }
-                
-                needsRepaint = true;
-            }
-            else
-            {
-                unresolvedShapes.add(shape);
-            }
-        }
-
-        if (needsRepaint)
-        {
-        	repaint();
         }
     }
 
@@ -324,9 +304,7 @@ public class ShapeView
     {
         synchronized (shapes)
         {
-            collisionChecker.removeObject(shape);
             shapes.remove(shape);
-            shapesWithPositionChanges.remove(shape);
         }
     }
 
@@ -341,6 +319,60 @@ public class ShapeView
     	{
     		shapes.clear();
     	}
+    }
+
+
+    // ----------------------------------------------------------
+    public void onShapesAdded(Iterable<? extends Shape> addedShapes)
+    {
+    	boolean needsRepaint = false;
+    	
+    	synchronized (shapes)
+    	{
+	    	for (Shape shape : addedShapes)
+	    	{
+		        if (getWidth() != 0 && getHeight() != 0)
+		        {
+		            GeometryUtils.resolveGeometry(shape.getBounds(), shape);
+		            if (GeometryUtils.isGeometryResolved(shape.getBounds()))
+		            {
+		                collisionChecker.addObject(shape);
+		                shapesWithPositionChanges.add(shape);
+		            }
+		            else
+		            {
+		                unresolvedShapes.add(shape);
+		            }
+		            
+		            needsRepaint = true;
+		        }
+		        else
+		        {
+		            unresolvedShapes.add(shape);
+		        }    	
+	    	}
+    	}
+
+        if (needsRepaint)
+        {
+            conditionallyRelayout();
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    public void onShapesRemoved(Iterable<? extends Shape> removedShapes)
+    {
+    	synchronized (shapes)
+    	{
+	    	for (Shape shape : removedShapes)
+	    	{
+	    		collisionChecker.removeObject(shape);
+	    		shapesWithPositionChanges.remove(shape);
+	    	}
+    	}
+
+        conditionallyRelayout();
     }
 
 
@@ -617,6 +649,33 @@ public class ShapeView
 
 
     // ----------------------------------------------------------
+    /**
+     * Gets the background color of the view.
+     * 
+     * @return the background {@link Color} of the view
+     */
+    public Color getBackgroundColor()
+    {
+    	return backgroundColor;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the background color of the view.
+     * 
+     * @param color the desired background {@link Color}
+     */
+    public void setBackgroundColor(Color color)
+    {
+    	backgroundColor = color;
+    	//setBackgroundColor(color.toRawColor());
+
+    	conditionallyRepaint();
+    }
+
+
+    // ----------------------------------------------------------
     public ShapeParent getShapeParent()
     {
         return null;
@@ -822,7 +881,7 @@ public class ShapeView
                     }
                     else
                     {
-                        canvas.drawColor(defaultBgColor);
+                        canvas.drawColor(backgroundColor.toRawColor());
                     }
 
                     drawContents(canvas);
@@ -946,7 +1005,6 @@ public class ShapeView
         internalSetAutoRepaintForThread(false);
 
         boolean result = super.dispatchTouchEvent(e);
-
         internalSetAutoRepaintForThread(true);
         repaint();
 
@@ -982,7 +1040,7 @@ public class ShapeView
     @Override
     public boolean onTouchEvent(MotionEvent e)
     {
-        int action = e.getActionMasked();
+    	int action = e.getAction() & MotionEvent.ACTION_MASK;
 
         boolean result = false;
 
@@ -1196,6 +1254,7 @@ public class ShapeView
             repaintThread.setRunning(true);
             animationManager.setRunning(true);
 
+            autoRepaint = true;
             repaint();
         }
 

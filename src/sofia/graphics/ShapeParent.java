@@ -1,6 +1,7 @@
 package sofia.graphics;
 
 import java.util.Collection;
+
 import android.graphics.RectF;
 
 // -------------------------------------------------------------------------
@@ -24,6 +25,14 @@ public interface ShapeParent
 	
 	
     // ----------------------------------------------------------
+	void onShapesAdded(Iterable<? extends Shape> shapes);
+
+	
+    // ----------------------------------------------------------
+	void onShapesRemoved(Iterable<? extends Shape> shapes);
+
+
+	// ----------------------------------------------------------
     /**
      * Gets the collection of shapes owned by the receiver.
      *
