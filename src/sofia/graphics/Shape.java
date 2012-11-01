@@ -12,6 +12,7 @@ import sofia.graphics.internal.animation.MotionStepTransformer;
 import sofia.graphics.internal.animation.PositionTransformer;
 import sofia.graphics.internal.animation.RotationTransformer;
 import sofia.graphics.internal.animation.XTransformer;
+import sofia.graphics.internal.animation.YTransformer;
 import sofia.internal.MethodDispatcher;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -22,9 +23,12 @@ import android.view.animation.Interpolator;
 
 // -------------------------------------------------------------------------
 /**
- * Write a one-sentence summary of your class here.
- * Follow it with additional details about its purpose, what abstraction
- * it represents, and how to use it.
+ * The base class for all types of shapes that can be drawn on a
+ * {@link ShapeView}. This class maintains all of the properties that are
+ * common to every type of shape, such as its bounds (position and size on the
+ * canvas), visibility, color (though some subclasses define multiple kinds of
+ * colors), and rotation. Animation support is also provided through this
+ * class.
  *
  * @author  Tony Allevato
  * @author  Last changed by $Author: edwards $
@@ -32,7 +36,7 @@ import android.view.animation.Interpolator;
  */
 public abstract class Shape
 {
-    //~ Instance/static variables .............................................
+    //~ Fields ................................................................
 
     private RectF bounds;
     private int zIndex;
@@ -85,7 +89,12 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Add another shape to the same view (or parent) containing this shape.
+     * Add another shape to the same view (or composite shape) containing this
+     * shape. This method is a convenience shortcut for
+     * {@code getShapeParent().add(newShape)}, but with the added benefit that
+     * it does nothing if the receiving shape is not added to a parent (and
+     * thus the parent is null).
+     * 
      * @param newShape The other shape to add.
      */
     public void addOther(Shape newShape)
@@ -130,7 +139,9 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Sets the bounding rectangle of the shape.
+     * Sets the bounding rectangle of the shape. The bounding rectangle passed
+     * to this method is copied, so changes to it after this method is called
+     * will not be reflected by the shape.
      *
      * @param newBounds The new bounding rectangle of the shape.
      */
@@ -153,7 +164,8 @@ public abstract class Shape
      * Get the current position anchor, which is an offset relative to the
      * upper left corner of the shape that is used as the shape's "origin"
      * for the purposes of getting/setting x-y positions.  The default
-     * anchor is (0, 0) unless it has been explicitly set.
+     * anchor is the top-left corner (0, 0) unless it has been explicitly set.
+     * 
      * @return The current position anchor.
      */
     public PointF getPositionAnchor()
@@ -170,6 +182,7 @@ public abstract class Shape
      * change the shape's current position, but will change the behavior
      * of future calls to setX()/setY()/setPosition() and
      * getX()/getY()/getPosition().
+     * 
      * @param anchor The new position anchor.
      */
     public void setPositionAnchor(PointF anchor)
@@ -186,6 +199,7 @@ public abstract class Shape
      * change the shape's current position, but will change the behavior
      * of future calls to setX()/setY()/setPosition() and
      * getX()/getY()/getPosition().
+     * 
      * @param anchor The new position anchor.
      */
     public void setPositionAnchor(Anchor anchor)
@@ -436,16 +450,29 @@ public abstract class Shape
     /**
      * Sets the origin (top-left corner) of the receiver.
      *
+     * @param x the x-coordinate of the desired origin of the shape
+     * @param y the y-coordinate of the desired origin of the shape
+     */
+    public void setPosition(float x, float y)
+    {
+        bounds.offsetTo(
+            x - positionAnchor.x,
+            y - positionAnchor.y);
+        notifyParentOfPositionChange();
+        conditionallyRelayout();
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the origin (top-left corner) of the receiver.
+     *
      * @param position A {@link PointF} object describing the origin of the
      *                 shape.
      */
     public void setPosition(PointF position)
     {
-        bounds.offsetTo(
-            position.x - positionAnchor.x,
-            position.y - positionAnchor.y);
-        notifyParentOfPositionChange();
-        conditionallyRelayout();
+    	setPosition(position.x, position.y);
     }
 
 
@@ -576,8 +603,11 @@ public abstract class Shape
     // ----------------------------------------------------------
     /**
      * Gets the z-index of the receiver. A shape with a higher z-index will be
-     * drawn on top of a shape with a lower z-index. By default, shapes are
-     * created with a z-index of 0.
+     * drawn on top of a shape with a lower z-index. Among shapes that have the
+     * same z-index, shapes added later will be drawn above shapes added
+     * earlier.
+     * 
+     * By default, shapes are created with a z-index of 0.
      *
      * @return The z-index of the shape.
      */
@@ -655,7 +685,7 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Sets the parent of the receiver.
+     * Sets the parent of the receiver. Used internally.
      *
      * @param newParent The new parent.
      */
@@ -762,10 +792,9 @@ public abstract class Shape
      * <pre>
      *     shape.animate(2000)
      *          .delay(1000)
-     *          .color(Color.RED)
+     *          .color(Color.red)
      *          .position(Anchor.TOP_RIGHT.ofView())
-     *          .play();
-     * </pre>
+     *          .play();</pre>
      * </p>
      *
      * @param duration The length of the animation in milliseconds.
@@ -796,9 +825,12 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Draws the receiver on the canvas.
+     * Subclasses must implement this method to define how the shape is to be
+     * drawn on the canvas. Users should never call this method directly; it is
+     * called as part of the repaint cycle by the {@link ShapeView} that
+     * contains the shape. 
      *
-     * @param canvas The Canvas on which to draw the shape.
+     * @param canvas The {@link Canvas} on which to draw the shape.
      */
     public abstract void draw(Canvas canvas);
 
@@ -967,6 +999,7 @@ public abstract class Shape
     /**
      * Determine whether this shape intersects another, based on their
      * bounding boxes.
+     * 
      * @param otherShape The other shape to check against.
      * @return True if this shape and the other shape intersect.
      */
@@ -997,6 +1030,7 @@ public abstract class Shape
     /**
      * Determine whether any part of this shape extends outside the given
      * rectangle.
+     * 
      * @param bounds The rectangle to check against.
      * @return A ViewEdges object indicating whether any part of this shape
      * extends outside the top, bottom, left, or right side of the bounds.
@@ -1052,29 +1086,28 @@ public abstract class Shape
      * constructed and played by chaining method calls directly:
      * 
      * <pre>
-     *     shape.animate(500).color(Color.BLUE).alpha(128).play();
-     * </pre>
+     *     shape.animate(500).color(Color.blue).alpha(128).play();</pre>
      * 
      * In situations where the type of the class must be referenced directly
      * (for example, when one is passed to an event handler like
      * {@code onAnimationDone}), referring to the name of that type can be
      * somewhat awkward due to the use of some Java generics tricks to ensure
      * that the methods chain properly. In nearly all cases, it is reasonable
-     * to use "?" wildcards in place of the generic parameters:
+     * to use a "?" wildcard in place of the generic parameter:
      * 
      * <pre>
-     *     Shape.Animator<?, ?> anim = shape.animate(500).color(Color.BLUE);
-     *     anim.play();
-     * </pre>
+     *     Shape.Animator&lt;?&gt; anim = shape.animate(500).color(Color.blue);
+     *     anim.play();</pre>
      *
-     * @param <ShapeType>
-     * @param <ConcreteType>
+     * @param <AnimatorType> the concrete type of the animator
      *
      * @author  Tony Allevato
      * @version 2011.12.11
      */
-    public class Animator<ConcreteType extends Animator<ConcreteType>>
+    public class Animator<AnimatorType extends Animator<AnimatorType>>
     {
+    	//~ Fields ............................................................
+
         private long duration;
         private Interpolator interpolator;
         private long startTime;
@@ -1094,16 +1127,17 @@ public abstract class Shape
         private Set<PropertyTransformer> transformers;
 
 
-        //~ Constructors ..........................................................
+        //~ Constructors ......................................................
 
         // ----------------------------------------------------------
         /**
-         * Creates a new animator for the specified shape. Users should not call
-         * this constructor directly; instead, they should use the
+         * Creates a new animator for the specified shape. Users cannot call
+         * call this constructor directly; instead, they need to use the
          * {@link Shape#animate(long)} method to get an animator object.
          *
          * @param shape the shape to animate
-         * @param duration the length of one pass of the animation, in milliseconds
+         * @param duration the length of one pass of the animation, in
+         *     milliseconds
          */
         protected Animator(long duration)
         {
@@ -1118,20 +1152,43 @@ public abstract class Shape
         }
 
 
-        //~ Methods ...............................................................
+        //~ Methods ...........................................................
 
         // ----------------------------------------------------------
         /**
-         * Gets the shape that the receiver is animating. Most users will not have
-         * a need to call this method; it is mainly provided for those who need to
-         * subclass an animator to provide animation support for custom properties
-         * of their own shapes.
+         * Gets the shape that the receiver is animating.
          *
          * @return the shape that the receiver is animating
          */
         public Shape getShape()
         {
             return Shape.this;
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * Gets the delay, in milliseconds, that this animation will wait (or
+         * did wait) before starting.
+         * 
+         * @return the delay, in milliseconds, that this animation will (or
+         *     did) wait before starting
+         */
+        public long getDelay()
+        {
+        	return delay;
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * Gets the duration of this animation in milliseconds.
+         * 
+         * @return the duration of this animation in milliseconds
+         */
+        public long getDuration()
+        {
+        	return duration;
         }
 
 
@@ -1146,10 +1203,10 @@ public abstract class Shape
          * @return this animator, for method chaining
          */
         @SuppressWarnings("unchecked")
-        public ConcreteType timing(Interpolator newInterpolator)
+        public AnimatorType timing(Interpolator newInterpolator)
         {
             this.interpolator = newInterpolator;
-            return (ConcreteType) this;
+            return (AnimatorType) this;
         }
 
 
@@ -1162,82 +1219,138 @@ public abstract class Shape
          * @return this animator, for method chaining
          */
         @SuppressWarnings("unchecked")
-        public ConcreteType delay(long newDelay)
+        public AnimatorType delay(long newDelay)
         {
             this.delay = newDelay;
-            return (ConcreteType) this;
+            return (AnimatorType) this;
         }
 
 
         // ----------------------------------------------------------
-        public ConcreteType position(float x, float y)
+        /**
+         * Sets the final position of the shape when the animation ends.
+         *
+         * @param x the final x-coordinate of the shape when the animation ends
+         * @param y the final y-coordinate of the shape when the animation ends
+         * @return this animator, for method chaining
+         */
+        public AnimatorType position(float x, float y)
         {
             return position(new PointF(x, y));
         }
 
 
         // ----------------------------------------------------------
+        /**
+         * Sets the final position of the shape when the animation ends.
+         *
+         * @param point the final position of the shape when the animation ends
+         * @return this animator, for method chaining
+         */
         @SuppressWarnings("unchecked")
-        public ConcreteType position(PointF point)
+        public AnimatorType position(PointF point)
         {
             addTransformer(new PositionTransformer(getShape(), point));
-            return (ConcreteType) this;
+            return (AnimatorType) this;
         }
 
 
         // ----------------------------------------------------------
+        /**
+         * Sets the final position of the shape when the animation ends as a
+         * relative shift from the shape's position when the animation starts.
+         *
+         * @param dx the horizontal amount to have shifted the shape when the
+         *     animation ends
+         * @param dy the vertical amount to have shifted the shape when the
+         *     animation ends
+         * @return this animator, for method chaining
+         */
         @SuppressWarnings("unchecked")
-        public ConcreteType moveBy(float dx, float dy)
+        public AnimatorType moveBy(float dx, float dy)
         {
         	addTransformer(new MotionStepTransformer(getShape(),
         			MotionStep.constantVelocity(dx, dy)));
-            return (ConcreteType) this;
+            return (AnimatorType) this;
         }
 
 
         // ----------------------------------------------------------
         @SuppressWarnings("unchecked")
-        public ConcreteType moveBy(float dx, float dy, float ax, float ay)
+        public AnimatorType moveBy(float dx, float dy, float ax, float ay)
         {
         	addTransformer(new MotionStepTransformer(getShape(),
         			MotionStep.constantAcceleration(dx, dy, ax, ay)));
-            return (ConcreteType) this;
+            return (AnimatorType) this;
         }
 
 
         // ----------------------------------------------------------
         @SuppressWarnings("unchecked")
-        public ConcreteType moveBy(MotionStep motionStep)
+        public AnimatorType moveBy(MotionStep motionStep)
         {
         	addTransformer(new MotionStepTransformer(getShape(), motionStep));
-            return (ConcreteType) this;
+            return (AnimatorType) this;
         }
 
 
         // ----------------------------------------------------------
+        /**
+         * Sets the final x-coordinate of the shape when the animation ends.
+         *
+         * @param y the final x-coordinate of the shape when the animation ends
+         * @return this animator, for method chaining
+         */
         @SuppressWarnings("unchecked")
-        public ConcreteType y(float y)
+        public AnimatorType x(float x)
         {
-            addTransformer(new XTransformer(getShape(), y));
-            return (ConcreteType) this;
+            addTransformer(new XTransformer(getShape(), x));
+            return (AnimatorType) this;
         }
 
 
         // ----------------------------------------------------------
+        /**
+         * Sets the final y-coordinate of the shape when the animation ends.
+         *
+         * @param y the final y-coordinate of the shape when the animation ends
+         * @return this animator, for method chaining
+         */
         @SuppressWarnings("unchecked")
-        public ConcreteType bounds(RectF bounds)
+        public AnimatorType y(float y)
+        {
+            addTransformer(new YTransformer(getShape(), y));
+            return (AnimatorType) this;
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * Sets the final bounds of the shape when the animation ends.
+         *
+         * @param bounds the final bounds of the shape when the animation ends
+         * @return this animator, for method chaining
+         */
+        @SuppressWarnings("unchecked")
+        public AnimatorType bounds(RectF bounds)
         {
             addTransformer(new BoundsTransformer(getShape(), bounds));
-            return (ConcreteType) this;
+            return (AnimatorType) this;
         }
 
 
         // ----------------------------------------------------------
+        /**
+         * Sets the final color of the shape when the animation ends.
+         *
+         * @param color the final color of the shape when the animation ends
+         * @return this animator, for method chaining
+         */
         @SuppressWarnings("unchecked")
-        public ConcreteType color(Color color)
+        public AnimatorType color(Color color)
         {
             addTransformer(new ColorTransformer(getShape(), color));
-            return (ConcreteType) this;
+            return (AnimatorType) this;
         }
 
 
@@ -1250,10 +1363,10 @@ public abstract class Shape
          * @return this animator, for method chaining
          */
         @SuppressWarnings("unchecked")
-        public ConcreteType alpha(int alpha)
+        public AnimatorType alpha(int alpha)
         {
             addTransformer(new AlphaTransformer(getShape(), alpha));
-            return (ConcreteType) this;
+            return (AnimatorType) this;
         }
 
 
@@ -1265,10 +1378,10 @@ public abstract class Shape
          * rotation.
          * </p><p>
          * A shape can be made to rotate completely multiple times by
-         * providing values higher than 360 to this method. For example, passing
-         * 360 would cause the shape to make one full rotation over the duration
-         * of the animation, passing 720 would cause it to make two full rotations,
-         * and so forth.
+         * providing values higher than 360 to this method. For example,
+         * passing 360 would cause the shape to make one full rotation over the
+         * duration of the animation, passing 720 would cause it to make two
+         * full rotations, and so forth.
          * </p>
          *
          * @param rotation the final rotation, in degrees clockwise (negative
@@ -1276,21 +1389,22 @@ public abstract class Shape
          * @return this animator, for method chaining
          */
         @SuppressWarnings("unchecked")
-        public ConcreteType rotation(float rotation)
+        public AnimatorType rotation(float rotation)
         {
             addTransformer(new RotationTransformer(getShape(), rotation));
-            return (ConcreteType) this;
+            return (AnimatorType) this;
         }
 
 
         // ----------------------------------------------------------
         /**
-         * Causes the animation to repeat until stopped. This method is provided as
-         * shorthand, equivalent to {@code repeatMode(RepeatMode.REPEAT)}.
+         * Causes the animation to repeat until stopped. This method is
+         * provided as shorthand, equivalent to
+         * {@code repeatMode(RepeatMode.REPEAT)}.
          *
          * @return this animator, for chaining method calls
          */
-        public ConcreteType repeat()
+        public AnimatorType repeat()
         {
             return repeatMode(RepeatMode.REPEAT);
         }
@@ -1298,13 +1412,13 @@ public abstract class Shape
 
         // ----------------------------------------------------------
         /**
-         * Causes the animation to oscillate (from start to end and back to start)
-         * until stopped. This method is provided as shorthand, equivalent to
-         * {@code repeatMode(RepeatMode.OSCILLATE)}.
+         * Causes the animation to oscillate (from start to end and back to
+         * start) until stopped. This method is provided as shorthand,
+         * equivalent to {@code repeatMode(RepeatMode.OSCILLATE)}.
          *
          * @return this animator, for chaining method calls
          */
-        public ConcreteType oscillate()
+        public AnimatorType oscillate()
         {
             return repeatMode(RepeatMode.OSCILLATE);
         }
@@ -1319,10 +1433,10 @@ public abstract class Shape
          * @return this animator, for chaining method calls
          */
         @SuppressWarnings("unchecked")
-        public ConcreteType repeatMode(RepeatMode mode)
+        public AnimatorType repeatMode(RepeatMode mode)
         {
             repeatMode = mode;
-            return (ConcreteType) this;
+            return (AnimatorType) this;
         }
 
 
@@ -1343,10 +1457,10 @@ public abstract class Shape
          * @return this animator, for chaining method calls
          */
         @SuppressWarnings("unchecked")
-        public ConcreteType removeWhenComplete()
+        public AnimatorType removeWhenComplete()
         {
             removeWhenComplete = true;
-            return (ConcreteType) this;
+            return (AnimatorType) this;
         }
 
 
@@ -1380,6 +1494,12 @@ public abstract class Shape
         
         
         // ----------------------------------------------------------
+        /**
+         * Gets a value indicating whether the animation is currently playing,
+         * either forward or backward.
+         * 
+         * @return true if the animation is playing, otherwise false
+         */
         public boolean isPlaying()
         {
         	return (state == AnimationState.FORWARD
@@ -1388,6 +1508,23 @@ public abstract class Shape
 
 
         // ----------------------------------------------------------
+        /**
+         * Gets a value indicating whether the animation is playing forward.
+         * 
+         * @return true if the animation is playing forward, otherwise false
+         */
+        public boolean isForward()
+        {
+        	return (state == AnimationState.FORWARD);
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * Gets a value indicating whether the animation is playing backward.
+         * 
+         * @return true if the animation is playing backward, otherwise false
+         */
         public boolean isBackward()
         {
         	return (state == AnimationState.BACKWARD);
@@ -1396,8 +1533,7 @@ public abstract class Shape
 
         // ----------------------------------------------------------
         /**
-         * This method is intended for internal use. Users wishing to stop a
-         * shape's animation should call {@link Shape#stopAnimation()} instead.
+         * Stops the animation.
          */
         public void stop()
         {
@@ -1408,9 +1544,6 @@ public abstract class Shape
         // ----------------------------------------------------------
         /**
          * This method is intended for internal use.
-         *
-         * @param time
-         * @return
          */
         public boolean advanceTo(long time)
         {
@@ -1465,12 +1598,14 @@ public abstract class Shape
                             scaledTime - duration) / duration);
                     }
 
-                    if (state == AnimationState.FORWARD && scaledTime > duration)
+                    if (state == AnimationState.FORWARD
+                    		&& scaledTime > duration)
                     {
                         state = AnimationState.BACKWARD;
                         postOnAnimationRepeat();
                     }
-                    else if (state == AnimationState.BACKWARD && scaledTime < duration)
+                    else if (state == AnimationState.BACKWARD
+                    		&& scaledTime < duration)
                     {
                         state = AnimationState.FORWARD;
                         postOnAnimationRepeat();
@@ -1539,7 +1674,8 @@ public abstract class Shape
 	        		
 	        		if (!result)
 	        		{
-	        			onAnimationRepeat.callMethodOn(view.getContext(), this);
+	        			onAnimationRepeat.callMethodOn(
+	        					view.getContext(), this);
 	        		}
         		}
         	}
