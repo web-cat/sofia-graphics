@@ -1,11 +1,31 @@
 package sofia.app;
 
+import java.util.Set;
+
+import android.graphics.PointF;
+import sofia.graphics.Color;
 import sofia.graphics.Shape;
+import sofia.graphics.ShapeManipulating;
+import sofia.graphics.ShapeQuerying;
 import sofia.graphics.ShapeView;
 
 // -------------------------------------------------------------------------
 /**
- * TODO
+ * <p>
+ * {@code ShapeScreen} is a subclass of screen that provides a built-in
+ * {@link ShapeView} and convenience methods for manipulating shapes directly
+ * in the screen class instead of having to call {@link #getShapeView()} for
+ * every operation.
+ * </p><p>
+ * When you subclass {@code ShapeScreen}, by default it will create a new
+ * {@code ShapeView} that occupies the entire width and height of the screen.
+ * If this is not what you want (for example, if you want to have a
+ * {@code ShapeView} alongside other widgets but still retain the convenience
+ * of methods like {@link #add(Shape)} directly on the screen), then place an
+ * instance of {@code ShapeView} in your layout file with the ID
+ * {@code shapeView}. Then the {@code ShapeScreen} will use that view for all
+ * of its other methods instead of creating its own.
+ * </p>
  *
  * @author  Tony Allevato
  * @author  Last changed by $Author: edwards $
@@ -13,8 +33,9 @@ import sofia.graphics.ShapeView;
  */
 public abstract class ShapeScreen
     extends Screen
+    implements ShapeManipulating, ShapeQuerying
 {
-    //~ Instance/static variables .............................................
+    //~ Fields ................................................................
 
     private ShapeView shapeView;
 
@@ -23,12 +44,29 @@ public abstract class ShapeScreen
 
     // ----------------------------------------------------------
     @Override
-    protected void beforeInitialize()
+    protected void afterLayoutInflated(boolean inflated)
     {
-        shapeView = createShapeView(this);
-        setContentView(shapeView);
+    	boolean hasShapeView = false;
+    	
+    	if (inflated)
+    	{
+        	int shapeViewId = getResources().getIdentifier(
+        			"shapeView", "id", getPackageName());
+
+        	if (shapeViewId != 0)
+        	{
+        		shapeView = (ShapeView) findViewById(shapeViewId);
+        		hasShapeView = true;
+        	}
+    	}
+
+    	if (!hasShapeView)
+    	{
+    		shapeView = createShapeView(this);
+    		setContentView(shapeView);
         
-        shapeView.requestFocus();
+    		shapeView.requestFocus();
+    	}
     }
 
 
@@ -43,7 +81,7 @@ public abstract class ShapeScreen
      */
     protected ShapeView createShapeView(ShapeScreen parent)
     {
-        return new ShapeView(parent);
+   		return new ShapeView(parent);
     }
 
 
@@ -152,4 +190,93 @@ public abstract class ShapeScreen
     {
         shapeView.enableRotateGestures();
     }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the background color of the screen's ShapeView. Note that if you
+     * provide your own layout where the ShapeView only occupies a portion of
+     * the screen, this method will only affect the ShapeView portion and not
+     * the entire screen.
+     * 
+     * @param color the desired background color
+     */
+    public void setBackgroundColor(Color color)
+    {
+    	shapeView.setBackgroundColor(color);
+    }
+
+
+	// ----------------------------------------------------------
+	public Set<Shape> getShapes()
+	{
+		return shapeView.getShapes();
+	}
+
+
+	// ----------------------------------------------------------
+	public <MyShape extends Shape> Set<MyShape> getShapes(Class<MyShape> cls)
+	{
+		return shapeView.getShapes(cls);
+	}
+
+
+	// ----------------------------------------------------------
+	public Shape getShapeAt(float x, float y)
+	{
+		return shapeView.getShapeAt(x, y);
+	}
+
+
+	// ----------------------------------------------------------
+	public <MyShape extends Shape> MyShape getShapeAt(float x, float y,
+			Class<MyShape> cls)
+	{
+		return shapeView.getShapeAt(x, y, cls);
+	}
+
+
+	// ----------------------------------------------------------
+	public Shape getShapeAt(PointF point)
+	{
+		return shapeView.getShapeAt(point);
+	}
+
+
+	// ----------------------------------------------------------
+	public <MyShape extends Shape> MyShape getShapeAt(PointF point,
+			Class<MyShape> cls)
+	{
+		return shapeView.getShapeAt(point, cls);
+	}
+
+
+	// ----------------------------------------------------------
+	public Set<Shape> getShapesAt(float x, float y)
+	{
+		return shapeView.getShapesAt(x, y);
+	}
+
+
+	// ----------------------------------------------------------
+	public <MyShape extends Shape> Set<MyShape> getShapesAt(float x, float y,
+			Class<MyShape> cls)
+	{
+		return shapeView.getShapesAt(x, y, cls);
+	}
+
+
+	// ----------------------------------------------------------
+	public Set<Shape> getShapesAt(PointF point)
+	{
+		return shapeView.getShapesAt(point);
+	}
+
+
+	// ----------------------------------------------------------
+	public <MyShape extends Shape> Set<MyShape> getShapesAt(PointF point,
+			Class<MyShape> cls)
+	{
+		return shapeView.getShapesAt(point, cls);
+	}
 }
