@@ -60,7 +60,7 @@ public class IBSPColChecker implements CollisionChecker
     {
         // checkConsistency();
         Rect bounds = getShapeBounds(shape);
-        
+
         // FIXME Hack hack hack hack hack hack hack
         // (The while loop below does NOT like shapes with zero width or zero
         // height)
@@ -491,6 +491,11 @@ public class IBSPColChecker implements CollisionChecker
         }
         else {
             bspNode = bspTree;
+            if (bspNode == null)
+            {
+                addObject(object);
+                return;
+            }
         }
 
         // Note, we can pass null as the parent because bspNode is guaranteed not to be null.
