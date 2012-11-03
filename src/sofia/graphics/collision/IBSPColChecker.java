@@ -486,6 +486,11 @@ public class IBSPColChecker implements CollisionChecker
         }
         else {
             bspNode = bspTree;
+            if (bspNode == null)
+            {
+                addObject(object);
+                return;
+            }
         }
 
         // Note, we can pass null as the parent because bspNode is guaranteed not to be null.
