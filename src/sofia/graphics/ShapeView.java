@@ -9,12 +9,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
+
 import sofia.graphics.internal.GeometryUtils;
 import sofia.graphics.internal.ShapeAnimationManager;
 import sofia.graphics.internal.ShapeSorter;
-import sofia.internal.EventForwarder;
-import sofia.internal.MethodDispatcher;
-import sofia.view.RotateGestureDetector;
+import sofia.internal.events.EventDispatcher;
+import sofia.internal.events.MotionEventDispatcher;
+import sofia.internal.events.ReversibleEventDispatcher;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
@@ -23,10 +24,8 @@ import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
-import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.ScaleGestureDetector;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
@@ -56,18 +55,28 @@ public class ShapeView
     private RepaintThread repaintThread;
 
     // Event forwarders
-    private MethodDispatcher onTouchDown =
-    		new MethodDispatcher("onTouchDown", 1);
-    private MethodDispatcher onTouchMove =
-    		new MethodDispatcher("onTouchMove", 1);
-    private MethodDispatcher onTouchUp =
-    		new MethodDispatcher("onTouchUp", 1);
-    private MethodDispatcher onKeyDown =
-    		new MethodDispatcher("onKeyDown", 1);
-    private EventForwarder<Object> onScaleForwarder;
-    private EventForwarder<Object> onRotateBeginForwarder;
-    private EventForwarder<Object> onRotateForwarder;
-    private EventForwarder<Object> onFlingForwarder;
+    private static final MotionEventDispatcher onTouchDown =
+            new MotionEventDispatcher("onTouchDown");
+    private static final MotionEventDispatcher onTouchMove =
+            new MotionEventDispatcher("onTouchMove");
+    private static final MotionEventDispatcher onTouchUp =
+            new MotionEventDispatcher("onTouchUp");
+    private static final EventDispatcher onKeyDown =
+            new EventDispatcher("onKeyDown");
+
+    private static final EventDispatcher onScaleGesture =
+            new EventDispatcher("onScaleGesture");
+    private static final EventDispatcher onRotateGestureBegin =
+            new EventDispatcher("onRotateGestureBegin");
+    private static final EventDispatcher onRotateGesture =
+            new EventDispatcher("onRotateGesture");
+    private static final EventDispatcher onFlingGesture =
+            new EventDispatcher("onFlingGesture");
+
+    private static final EventDispatcher onCollisionWith =
+            new EventDispatcher("onCollisionWith");
+    private static final ReversibleEventDispatcher onCollisionBetween =
+            new ReversibleEventDispatcher("onCollisionBetween");
 
     private sofia.graphics.collision.CollisionChecker collisionChecker;
     private Shape shapeBeingDragged;
@@ -75,10 +84,6 @@ public class ShapeView
     private Set<Shape> shapesWithPositionChanges;
     private Map<Shape, Set<Shape>> activeCollisions;
     private Map<Shape, ViewEdges> activeEdgeCollisions;
-    private MethodDispatcher onCollisionWith =
-        new MethodDispatcher("onCollisionWith", 1);
-    private MethodDispatcher onCollisionBetween =
-        new MethodDispatcher("onCollisionBetween", 2);
 
 
     //~ Constructors ..........................................................
@@ -141,22 +146,13 @@ public class ShapeView
             });
 
         backgroundColor = Color.fromRawColor(
-        		array.getColor(0, android.graphics.Color.BLACK));
+                array.getColor(0, android.graphics.Color.BLACK));
         array.recycle();
 
         shapes = new ShapeSet(this);
 //        gestureDetector = new GestureDetector(new ShapeGestureListener());
 
         gestureDetectors = new ArrayList<Object>();
-
-        onScaleForwarder =
-            new EventForwarder<Object>(this, Object.class, "onScale");
-        onRotateBeginForwarder =
-            new EventForwarder<Object>(this, Object.class, "onRotateBegin");
-        onRotateForwarder =
-            new EventForwarder<Object>(this, Object.class, "onRotate");
-        onFlingForwarder =
-            new EventForwarder<Object>(this, Object.class, "onFling");
 
         repaintThread = new RepaintThread();
         animationManager = new ShapeAnimationManager(this);
@@ -169,7 +165,7 @@ public class ShapeView
         unresolvedShapes = new HashSet<Shape>();
         activeCollisions = new HashMap<Shape, Set<Shape>>();
         activeEdgeCollisions = new HashMap<Shape, ViewEdges>();
-        
+
         setFocusableInTouchMode(true);
     }
 
@@ -236,7 +232,7 @@ public class ShapeView
      * Gets a set that represents all the shapes currently in this view. Note
      * that this set is not a copy of the view's shape set; changes to this set
      * will <em>directly affect</em> the view.
-     * 
+     *
      * @return a set that represents all the shapes currently in this view
      */
     public Set<Shape> getShapes()
@@ -315,43 +311,43 @@ public class ShapeView
      */
     public void clear()
     {
-    	synchronized (shapes)
-    	{
-    		shapes.clear();
-    	}
+        synchronized (shapes)
+        {
+            shapes.clear();
+        }
     }
 
 
     // ----------------------------------------------------------
     public void onShapesAdded(Iterable<? extends Shape> addedShapes)
     {
-    	boolean needsRepaint = false;
-    	
-    	synchronized (shapes)
-    	{
-	    	for (Shape shape : addedShapes)
-	    	{
-		        if (getWidth() != 0 && getHeight() != 0)
-		        {
-		            GeometryUtils.resolveGeometry(shape.getBounds(), shape);
-		            if (GeometryUtils.isGeometryResolved(shape.getBounds()))
-		            {
-		                collisionChecker.addObject(shape);
-		                shapesWithPositionChanges.add(shape);
-		            }
-		            else
-		            {
-		                unresolvedShapes.add(shape);
-		            }
-		            
-		            needsRepaint = true;
-		        }
-		        else
-		        {
-		            unresolvedShapes.add(shape);
-		        }    	
-	    	}
-    	}
+        boolean needsRepaint = false;
+
+        synchronized (shapes)
+        {
+            for (Shape shape : addedShapes)
+            {
+                if (getWidth() != 0 && getHeight() != 0)
+                {
+                    GeometryUtils.resolveGeometry(shape.getBounds(), shape);
+                    if (GeometryUtils.isGeometryResolved(shape.getBounds()))
+                    {
+                        collisionChecker.addObject(shape);
+                        shapesWithPositionChanges.add(shape);
+                    }
+                    else
+                    {
+                        unresolvedShapes.add(shape);
+                    }
+
+                    needsRepaint = true;
+                }
+                else
+                {
+                    unresolvedShapes.add(shape);
+                }
+            }
+        }
 
         if (needsRepaint)
         {
@@ -363,14 +359,14 @@ public class ShapeView
     // ----------------------------------------------------------
     public void onShapesRemoved(Iterable<? extends Shape> removedShapes)
     {
-    	synchronized (shapes)
-    	{
-	    	for (Shape shape : removedShapes)
-	    	{
-	    		collisionChecker.removeObject(shape);
-	    		shapesWithPositionChanges.remove(shape);
-	    	}
-    	}
+        synchronized (shapes)
+        {
+            for (Shape shape : removedShapes)
+            {
+                collisionChecker.removeObject(shape);
+                shapesWithPositionChanges.remove(shape);
+            }
+        }
 
         conditionallyRelayout();
     }
@@ -651,27 +647,27 @@ public class ShapeView
     // ----------------------------------------------------------
     /**
      * Gets the background color of the view.
-     * 
+     *
      * @return the background {@link Color} of the view
      */
     public Color getBackgroundColor()
     {
-    	return backgroundColor;
+        return backgroundColor;
     }
 
 
     // ----------------------------------------------------------
     /**
      * Sets the background color of the view.
-     * 
+     *
      * @param color the desired background {@link Color}
      */
     public void setBackgroundColor(Color color)
     {
-    	backgroundColor = color;
-    	//setBackgroundColor(color.toRawColor());
+        backgroundColor = color;
+        //setBackgroundColor(color.toRawColor());
 
-    	conditionallyRepaint();
+        conditionallyRepaint();
     }
 
 
@@ -773,12 +769,12 @@ public class ShapeView
 
                         boolean eventHandled =
                             // Handle event on shapes
-                            onCollisionWith.callMethodOn(shape, other)
-                            || onCollisionWith.callMethodOn(other, shape)
+                            onCollisionWith.dispatch(shape, other)
+                            || onCollisionWith.dispatch(other, shape)
 
                             // Handled event on view
-                            || onCollisionBetween.callMethodOn(
-                                this, shape, other);
+                            || onCollisionBetween.dispatch(this, shape, other);
+
                         if (!eventHandled)
                         {
                             // Handle event on screen
@@ -786,7 +782,7 @@ public class ShapeView
                             if (ctxt != null)
                             {
                                 eventHandled = onCollisionBetween
-                                    .callMethodOn(ctxt, shape, other);
+                                    .dispatch(ctxt, shape, other);
                             }
 
 //                          ViewParent parent = getParent();
@@ -813,11 +809,11 @@ public class ShapeView
                             activeEdgeCollisions.put(shape, edgeCollision);
                             boolean eventHandled =
                                 // Handle event on shape
-                                onCollisionWith.callMethodOn(
+                                onCollisionWith.dispatch(
                                     shape, edgeCollision)
 
                                 // Handled event on view
-                                || onCollisionBetween.callMethodOn(
+                                || onCollisionBetween.dispatch(
                                         this, shape, edgeCollision);
                             if (!eventHandled)
                             {
@@ -826,7 +822,7 @@ public class ShapeView
                                 if (ctxt != null)
                                 {
                                     eventHandled = onCollisionBetween
-                                        .callMethodOn(
+                                        .dispatch(
                                             ctxt, shape, edgeCollision);
                                 }
 
@@ -1018,9 +1014,11 @@ public class ShapeView
      */
     public void enableScaleGestures()
     {
-        ScaleGestureDetector detector = new ScaleGestureDetector(
-            getContext(), new ScaleGestureListener());
-        gestureDetectors.add(detector);
+        // FIXME re-enable
+
+        //ScaleGestureDetector detector = new ScaleGestureDetector(
+        //    getContext(), new ScaleGestureListener());
+        //gestureDetectors.add(detector);
     }
 
 
@@ -1030,9 +1028,11 @@ public class ShapeView
      */
     public void enableRotateGestures()
     {
-        RotateGestureDetector detector = new RotateGestureDetector(
-            getContext(), new RotateGestureListener());
-        gestureDetectors.add(detector);
+        // FIXME re-enable
+
+        //RotateGestureDetector detector = new RotateGestureDetector(
+        //    getContext(), new RotateGestureListener());
+        //gestureDetectors.add(detector);
     }
 
 
@@ -1040,7 +1040,7 @@ public class ShapeView
     @Override
     public boolean onTouchEvent(MotionEvent e)
     {
-    	int action = e.getAction() & MotionEvent.ACTION_MASK;
+        int action = e.getAction() & MotionEvent.ACTION_MASK;
 
         boolean result = false;
 
@@ -1068,18 +1068,18 @@ public class ShapeView
         else*/ if (action == MotionEvent.ACTION_POINTER_DOWN
             || action == MotionEvent.ACTION_DOWN)
         {
-        	processTouchEvent(e, onTouchDown);
+            processTouchEvent(e, onTouchDown);
             return true;
         }
         else if (action == MotionEvent.ACTION_MOVE)
         {
-        	processTouchEvent(e, onTouchMove);
+            processTouchEvent(e, onTouchMove);
             return true;
         }
         else if (action == MotionEvent.ACTION_POINTER_UP ||
             action == MotionEvent.ACTION_UP)
         {
-        	processTouchEvent(e, onTouchUp);
+            processTouchEvent(e, onTouchUp);
             return true;
         }
         else
@@ -1090,63 +1090,64 @@ public class ShapeView
 
 
     // ----------------------------------------------------------
-    private void processTouchEvent(MotionEvent e, MethodDispatcher method)
+    private void processTouchEvent(MotionEvent e, EventDispatcher event)
     {
-    	boolean eventHandled = false;
+        boolean eventHandled = false;
 
-    	// TODO add "margin" for touch events to make small objects easier to
-    	// touch.
+        // TODO add "margin" for touch events to make small objects easier to
+        // touch.
 
-    	if (method == onTouchDown)
-    	{
-    		shapeBeingDragged = null;
-    	}
+        if (event == onTouchDown)
+        {
+            shapeBeingDragged = null;
+        }
 
-    	if ((method == onTouchMove || method == onTouchUp)
-    			&& shapeBeingDragged != null)
-    	{
-        	eventHandled = method.callMethodOn(shapeBeingDragged, e);
-    	}
-    	else
-    	{
-    		Set<Shape> shapes = collisionChecker.getObjectsAt(
-    				e.getX(), e.getY(), null);
+        if ((event == onTouchMove || event == onTouchUp)
+                && shapeBeingDragged != null)
+        {
+            eventHandled = event.dispatch(shapeBeingDragged, e);
+        }
+        else
+        {
+            Set<Shape> shapes = collisionChecker.getObjectsAt(
+                    e.getX(), e.getY(), null);
 
-	    	for (Shape shape : shapes)
-	    	{
-	        	eventHandled |= method.callMethodOn(shape, e);
+            for (Shape shape : shapes)
+            {
+                eventHandled |= event.dispatch(shape, e);
 
-	        	if (method == onTouchDown && onTouchMove.supportedBy(shape, e))
-        		{
-        			shapeBeingDragged = shape;
-        			break;
-        		}
+                if (event == onTouchDown
+                        && onTouchMove.isSupportedBy(shape, e))
+                {
+                    shapeBeingDragged = shape;
+                    break;
+                }
 
-	        	if (eventHandled)
-	        	{
-	        		break;
-	        	}
-	    	}
-    	}
+                if (eventHandled)
+                {
+                    break;
+                }
+            }
+        }
 
-    	if (method == onTouchUp)
-    	{
-    		shapeBeingDragged = null;
-    	}
+        if (event == onTouchUp)
+        {
+            shapeBeingDragged = null;
+        }
 
-    	if (!eventHandled)
-    	{
-    		eventHandled = method.callMethodOn(this, e);
-    	}
+        if (!eventHandled)
+        {
+            eventHandled = event.dispatch(this, e);
+        }
 
-    	if (!eventHandled)
-    	{
+        if (!eventHandled)
+        {
             Context ctxt = getContext();
             if (ctxt != null)
             {
-        		eventHandled = method.callMethodOn(ctxt, e);
+                eventHandled = event.dispatch(ctxt, e);
             }
-    	}
+        }
     }
 
 
@@ -1157,10 +1158,7 @@ public class ShapeView
         Context ctxt = getContext();
         if (ctxt != null)
         {
-        	if (onKeyDown.supportedBy(ctxt, e))
-        	{
-        		onKeyDown.callMethodOn(ctxt, e);
-        	}
+               onKeyDown.dispatch(ctxt, e);
         }
 
         return super.onKeyDown(keyCode, e);
@@ -1270,7 +1268,7 @@ public class ShapeView
 
 
     // ----------------------------------------------------------
-    private class ScaleGestureListener
+    /*private class ScaleGestureListener
         implements ScaleGestureDetector.OnScaleGestureListener
     {
         public boolean onScale(ScaleGestureDetector detector)
@@ -1300,7 +1298,6 @@ public class ShapeView
         public void onScaleEnd(ScaleGestureDetector detector)
         {
             // TODO Auto-generated method stub
-
         }
     }
 
@@ -1381,5 +1378,5 @@ public class ShapeView
                 return true;
             }
         }
-    }
+    }*/
 }
