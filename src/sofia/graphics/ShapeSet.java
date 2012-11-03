@@ -1,6 +1,8 @@
 package sofia.graphics;
 
 import sofia.internal.Reversed;
+
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Collection;
 import java.util.Map;
@@ -51,7 +53,7 @@ public class ShapeSet
         shapeAddTimes.put(shape, SHAPE_ADD_COUNTER++);
 
         boolean result = treeSet.add(shape);
-        parent.conditionallyRelayout();
+        parent.onShapesAdded(Collections.singleton(shape));
         return result;
     }
 
@@ -66,7 +68,7 @@ public class ShapeSet
         }
 
         boolean result = treeSet.addAll(collection);
-        parent.conditionallyRelayout();
+        parent.onShapesAdded(collection);
         return result;
     }
 
@@ -80,8 +82,11 @@ public class ShapeSet
         }
 
         shapeAddTimes.clear();
-        treeSet.clear();
-        parent.conditionallyRelayout();
+
+        TreeSet<Shape> oldTreeSet = treeSet;
+        treeSet = new TreeSet<Shape>(zorder);
+
+        parent.onShapesRemoved(oldTreeSet);
     }
 
 
@@ -109,7 +114,7 @@ public class ShapeSet
     // ----------------------------------------------------------
     public Iterator<Shape> iterator()
     {
-        return new WrappingIterator(treeSet.iterator());
+        return new WrappingIterator(treeSet.iterator(), true);
     }
 
 
@@ -124,7 +129,7 @@ public class ShapeSet
         Shape[] array = new Shape[size()];
         treeSet.toArray(array);
 
-        return new WrappingIterator(Reversed.reversed(array).iterator());
+        return new WrappingIterator(Reversed.reversed(array).iterator(), true);
     }
 
 
@@ -137,9 +142,10 @@ public class ShapeSet
         {
             ((Shape) object).setParent(null);
             shapeAddTimes.remove(object);
+
+            parent.onShapesRemoved(Collections.singleton((Shape) object));
         }
 
-        parent.conditionallyRelayout();
         return result;
     }
 
@@ -150,6 +156,7 @@ public class ShapeSet
         boolean modified = false;
 
         Iterator<Shape> it = iterator();
+        TreeSet<Shape> removedShapes = new TreeSet<Shape>(zorder);
         while (it.hasNext())
         {
             Shape shape = it.next();
@@ -158,6 +165,7 @@ public class ShapeSet
             {
                 // Since we're using the wrapping iterator here, the parent
                 // will be unset properly.
+                removedShapes.add(shape);
                 it.remove();
                 modified = true;
             }
@@ -165,8 +173,9 @@ public class ShapeSet
 
         if (modified)
         {
-            parent.conditionallyRelayout();
+            parent.onShapesRemoved(removedShapes);
         }
+
         return modified;
     }
 
@@ -177,12 +186,14 @@ public class ShapeSet
         boolean modified = false;
 
         Iterator<Shape> it = iterator();
+        TreeSet<Shape> removedShapes = new TreeSet<Shape>(zorder);
         while (it.hasNext())
         {
             Shape shape = it.next();
 
             if (!collection.contains(shape))
             {
+                removedShapes.add(shape);
                 it.remove();
                 modified = true;
             }
@@ -190,8 +201,9 @@ public class ShapeSet
 
         if (modified)
         {
-            parent.conditionallyRelayout();
+            parent.onShapesRemoved(removedShapes);
         }
+
         return modified;
     }
 
@@ -337,13 +349,15 @@ public class ShapeSet
     private class WrappingIterator implements Iterator<Shape>
     {
         private Iterator<Shape> iterator;
+        private boolean notifyParent;
         private Shape lastShape;
 
 
         // ----------------------------------------------------------
-        public WrappingIterator(Iterator<Shape> iterator)
+        public WrappingIterator(Iterator<Shape> iterator, boolean notifyParent)
         {
             this.iterator = iterator;
+            this.notifyParent = notifyParent;
         }
 
 
@@ -371,7 +385,11 @@ public class ShapeSet
             {
                 lastShape.setParent(null);
                 shapeAddTimes.remove(lastShape);
-                parent.conditionallyRelayout();
+
+                if (notifyParent)
+                {
+                    parent.onShapesRemoved(Collections.singleton(lastShape));
+                }
 
                 lastShape = null;
             }
