@@ -60,17 +60,17 @@ public class IBSPColChecker implements CollisionChecker
     {
         // checkConsistency();
         Rect bounds = getShapeBounds(shape);
-        
+
         // FIXME Hack hack hack hack hack hack hack
         // (The while loop below does NOT like shapes with zero width or zero
         // height)
         if (bounds.getWidth() == 0)
         {
-        	bounds.setWidth(0.001f);
+            bounds.setWidth(0.001f);
         }
         if (bounds.getHeight() == 0)
         {
-        	bounds.setHeight(0.001f);
+            bounds.setHeight(0.001f);
         }
 
         if (bspTree == null) {
@@ -95,7 +95,6 @@ public class IBSPColChecker implements CollisionChecker
             Rect treeArea = bspTree.getArea();
             while (! treeArea.contains(bounds)) {
                 // We increase the tree area in up to four directions:
-            	System.out.println("bounds = " + bounds + ", treeArea = " + treeArea);
                 if (bounds.getX() < treeArea.getX()) {
                     // double the width out to the left
                     float bx = treeArea.getX() - treeArea.getWidth();
@@ -108,7 +107,6 @@ public class IBSPColChecker implements CollisionChecker
                     newTop.setChild(PARENT_RIGHT, bspTree);
                     bspTree = newTop;
                     treeArea = newArea;
-                	System.out.println("left: newArea = " + newArea);
                 }
                 if (bounds.getRight() > treeArea.getRight()) {
                     // double the width out to the right
@@ -122,7 +120,6 @@ public class IBSPColChecker implements CollisionChecker
                     newTop.setChild(PARENT_LEFT, bspTree);
                     bspTree = newTop;
                     treeArea = newArea;
-                	System.out.println("right: newArea = " + newArea);
                 }
                 if (bounds.getY() < treeArea.getY()) {
                     // double the height out the top
@@ -136,7 +133,6 @@ public class IBSPColChecker implements CollisionChecker
                     newTop.setChild(PARENT_RIGHT, bspTree);
                     bspTree = newTop;
                     treeArea = newArea;
-                	System.out.println("top: newArea = " + newArea);
                 }
                 if (bounds.getTop() > treeArea.getTop()) {
                     // double the height out the bottom
@@ -150,7 +146,6 @@ public class IBSPColChecker implements CollisionChecker
                     newTop.setChild(PARENT_LEFT, bspTree);
                     bspTree = newTop;
                     treeArea = newArea;
-                	System.out.println("bottom: newArea = " + newArea);
                 }
             }
 
