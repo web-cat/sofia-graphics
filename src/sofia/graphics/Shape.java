@@ -13,7 +13,8 @@ import sofia.graphics.internal.animation.PositionTransformer;
 import sofia.graphics.internal.animation.RotationTransformer;
 import sofia.graphics.internal.animation.XTransformer;
 import sofia.graphics.internal.animation.YTransformer;
-import sofia.internal.MethodDispatcher;
+import sofia.internal.events.EventDispatcher;
+import sofia.internal.events.OptionalEventDispatcher;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -94,17 +95,17 @@ public abstract class Shape
      * {@code getShapeParent().add(newShape)}, but with the added benefit that
      * it does nothing if the receiving shape is not added to a parent (and
      * thus the parent is null).
-     * 
+     *
      * @param newShape The other shape to add.
      */
     public void addOther(Shape newShape)
     {
-    	ShapeParent parent = getShapeParent();
+        ShapeParent parent = getShapeParent();
 
-    	if (parent != null)
-    	{
-    		parent.add(newShape);
-    	}
+        if (parent != null)
+        {
+            parent.add(newShape);
+        }
     }
 
 
@@ -114,12 +115,12 @@ public abstract class Shape
      */
     public void remove()
     {
-    	ShapeParent parent = getShapeParent();
+        ShapeParent parent = getShapeParent();
 
-    	if (parent != null)
-    	{
-    		parent.remove(this);
-    	}
+        if (parent != null)
+        {
+            parent.remove(this);
+        }
     }
 
 
@@ -165,7 +166,7 @@ public abstract class Shape
      * upper left corner of the shape that is used as the shape's "origin"
      * for the purposes of getting/setting x-y positions.  The default
      * anchor is the top-left corner (0, 0) unless it has been explicitly set.
-     * 
+     *
      * @return The current position anchor.
      */
     public PointF getPositionAnchor()
@@ -182,7 +183,7 @@ public abstract class Shape
      * change the shape's current position, but will change the behavior
      * of future calls to setX()/setY()/setPosition() and
      * getX()/getY()/getPosition().
-     * 
+     *
      * @param anchor The new position anchor.
      */
     public void setPositionAnchor(PointF anchor)
@@ -199,7 +200,7 @@ public abstract class Shape
      * change the shape's current position, but will change the behavior
      * of future calls to setX()/setY()/setPosition() and
      * getX()/getY()/getPosition().
-     * 
+     *
      * @param anchor The new position anchor.
      */
     public void setPositionAnchor(Anchor anchor)
@@ -472,7 +473,7 @@ public abstract class Shape
      */
     public void setPosition(PointF position)
     {
-    	setPosition(position.x, position.y);
+        setPosition(position.x, position.y);
     }
 
 
@@ -606,7 +607,7 @@ public abstract class Shape
      * drawn on top of a shape with a lower z-index. Among shapes that have the
      * same z-index, shapes added later will be drawn above shapes added
      * earlier.
-     * 
+     *
      * By default, shapes are created with a z-index of 0.
      *
      * @return The z-index of the shape.
@@ -746,7 +747,7 @@ public abstract class Shape
      */
     public void setAlpha(int newAlpha)
     {
-    	setColor(getColor().withAlpha(newAlpha));
+        setColor(getColor().withAlpha(newAlpha));
     }
 
 
@@ -828,7 +829,7 @@ public abstract class Shape
      * Subclasses must implement this method to define how the shape is to be
      * drawn on the canvas. Users should never call this method directly; it is
      * called as part of the repaint cycle by the {@link ShapeView} that
-     * contains the shape. 
+     * contains the shape.
      *
      * @param canvas The {@link Canvas} on which to draw the shape.
      */
@@ -999,7 +1000,7 @@ public abstract class Shape
     /**
      * Determine whether this shape intersects another, based on their
      * bounding boxes.
-     * 
+     *
      * @param otherShape The other shape to check against.
      * @return True if this shape and the other shape intersect.
      */
@@ -1030,7 +1031,7 @@ public abstract class Shape
     /**
      * Determine whether any part of this shape extends outside the given
      * rectangle.
-     * 
+     *
      * @param bounds The rectangle to check against.
      * @return A ViewEdges object indicating whether any part of this shape
      * extends outside the top, bottom, left, or right side of the bounds.
@@ -1075,8 +1076,8 @@ public abstract class Shape
     {
         this.collisionChecker = collisionChecker;
     }
-    
-    
+
+
     //~ Animation support classes .............................................
 
     // -------------------------------------------------------------------------
@@ -1084,17 +1085,17 @@ public abstract class Shape
      * Provides animation support for shapes. Most uses of this class will not
      * need to reference it directly; for example, an animation can be
      * constructed and played by chaining method calls directly:
-     * 
+     *
      * <pre>
      *     shape.animate(500).color(Color.blue).alpha(128).play();</pre>
-     * 
+     *
      * In situations where the type of the class must be referenced directly
      * (for example, when one is passed to an event handler like
      * {@code onAnimationDone}), referring to the name of that type can be
      * somewhat awkward due to the use of some Java generics tricks to ensure
      * that the methods chain properly. In nearly all cases, it is reasonable
      * to use a "?" wildcard in place of the generic parameter:
-     * 
+     *
      * <pre>
      *     Shape.Animator&lt;?&gt; anim = shape.animate(500).color(Color.blue);
      *     anim.play();</pre>
@@ -1106,23 +1107,21 @@ public abstract class Shape
      */
     public class Animator<AnimatorType extends Animator<AnimatorType>>
     {
-    	//~ Fields ............................................................
+        //~ Fields ............................................................
 
         private long duration;
         private Interpolator interpolator;
         private long startTime;
         private long delay;
+        private String name;
         private RepeatMode repeatMode;
         private boolean removeWhenComplete;
         private AnimationState state;
         private long lastTime;
-        
-        private MethodDispatcher onAnimationStart =
-        		new MethodDispatcher("onAnimationStart", 1);
-        private MethodDispatcher onAnimationDone =
-        		new MethodDispatcher("onAnimationDone", 1);
-        private MethodDispatcher onAnimationRepeat =
-        		new MethodDispatcher("onAnimationRepeat", 1);
+
+        private OptionalEventDispatcher animationStarted;
+        private OptionalEventDispatcher animationEnded;
+        private OptionalEventDispatcher animationRepeated;
 
         private Set<PropertyTransformer> transformers;
 
@@ -1170,25 +1169,73 @@ public abstract class Shape
         /**
          * Gets the delay, in milliseconds, that this animation will wait (or
          * did wait) before starting.
-         * 
+         *
          * @return the delay, in milliseconds, that this animation will (or
          *     did) wait before starting
          */
         public long getDelay()
         {
-        	return delay;
+            return delay;
         }
 
 
         // ----------------------------------------------------------
         /**
          * Gets the duration of this animation in milliseconds.
-         * 
+         *
          * @return the duration of this animation in milliseconds
          */
         public long getDuration()
         {
-        	return duration;
+            return duration;
+        }
+
+
+        // ----------------------------------------------------------
+        /**
+         * <p>
+         * Sets the name of this animation. You should set the name of an
+         * animation if you wish to be notified about events related to that
+         * animation. This name is used to determine the name of the handler
+         * method to call on the shape or the controller when animation begins,
+         * repeats, or ends.
+         * </p><p>
+         * For example, if the animation has the name "bounce", then the
+         * following notifications will be sent to the shape and the
+         * controller, if those methods exist:
+         * </p>
+         * <ul>
+         * <li>{@code bounceAnimationStarted(Shape.Animator<?>)}</li>
+         * <li>{@code bounceAnimationStarted()}</li>
+         * <li>{@code bounceAnimationRepeated(Shape.Animator<?>)}</li>
+         * <li>{@code bounceAnimationStarted()}</li>
+         * <li>{@code bounceAnimationEnded(Shape.Animator<?>)}</li>
+         * <li>{@code bounceAnimationEnded()}</li>
+         * </ul>
+         * <p>
+         * Therefore, the name of an animation should be a valid Java
+         * identifier, preferably starting with a lowercase letter.
+         * </p><p>
+         * The name of the animation <strong>must be set</strong> in order to
+         * receive notifications about it.
+         * </p>
+         *
+         * @param newName the name of the animation
+         * @return this animator, for method chaining
+         */
+        @SuppressWarnings("unchecked")
+        public AnimatorType name(String newName)
+        {
+            this.name = newName;
+
+            animationStarted =
+                    new OptionalEventDispatcher(name + "AnimationStarted");
+            animationRepeated =
+                    new OptionalEventDispatcher(name + "AnimationRepeated");
+            animationEnded =
+                    new OptionalEventDispatcher(name + "AnimationEnded");
+
+            return (AnimatorType) this;
         }
 
 
@@ -1269,8 +1316,8 @@ public abstract class Shape
         @SuppressWarnings("unchecked")
         public AnimatorType moveBy(float dx, float dy)
         {
-        	addTransformer(new MotionStepTransformer(getShape(),
-        			MotionStep.constantVelocity(dx, dy)));
+            addTransformer(new MotionStepTransformer(getShape(),
+                    MotionStep.constantVelocity(dx, dy)));
             return (AnimatorType) this;
         }
 
@@ -1279,8 +1326,8 @@ public abstract class Shape
         @SuppressWarnings("unchecked")
         public AnimatorType moveBy(float dx, float dy, float ax, float ay)
         {
-        	addTransformer(new MotionStepTransformer(getShape(),
-        			MotionStep.constantAcceleration(dx, dy, ax, ay)));
+            addTransformer(new MotionStepTransformer(getShape(),
+                    MotionStep.constantAcceleration(dx, dy, ax, ay)));
             return (AnimatorType) this;
         }
 
@@ -1289,7 +1336,7 @@ public abstract class Shape
         @SuppressWarnings("unchecked")
         public AnimatorType moveBy(MotionStep motionStep)
         {
-        	addTransformer(new MotionStepTransformer(getShape(), motionStep));
+            addTransformer(new MotionStepTransformer(getShape(), motionStep));
             return (AnimatorType) this;
         }
 
@@ -1491,43 +1538,43 @@ public abstract class Shape
             startTime = System.currentTimeMillis() + delay;
             getShape().getParentView().getAnimationManager().enqueue(this);
         }
-        
-        
+
+
         // ----------------------------------------------------------
         /**
          * Gets a value indicating whether the animation is currently playing,
          * either forward or backward.
-         * 
+         *
          * @return true if the animation is playing, otherwise false
          */
         public boolean isPlaying()
         {
-        	return (state == AnimationState.FORWARD
-        			|| state == AnimationState.BACKWARD);
+            return (state == AnimationState.FORWARD
+                    || state == AnimationState.BACKWARD);
         }
 
 
         // ----------------------------------------------------------
         /**
          * Gets a value indicating whether the animation is playing forward.
-         * 
+         *
          * @return true if the animation is playing forward, otherwise false
          */
         public boolean isForward()
         {
-        	return (state == AnimationState.FORWARD);
+            return (state == AnimationState.FORWARD);
         }
 
 
         // ----------------------------------------------------------
         /**
          * Gets a value indicating whether the animation is playing backward.
-         * 
+         *
          * @return true if the animation is playing backward, otherwise false
          */
         public boolean isBackward()
         {
-        	return (state == AnimationState.BACKWARD);
+            return (state == AnimationState.BACKWARD);
         }
 
 
@@ -1558,7 +1605,7 @@ public abstract class Shape
             else if (state == AnimationState.WAITING)
             {
                 state = AnimationState.FORWARD;
-                postOnAnimationStart();
+                dispatchAnimationEvent(animationStarted);
             }
 
             float t = 0;
@@ -1580,7 +1627,7 @@ public abstract class Shape
 
                     if (scaledTime < lastTime)
                     {
-                        postOnAnimationRepeat();
+                        dispatchAnimationEvent(animationRepeated);
                     }
 
                     break;
@@ -1599,16 +1646,16 @@ public abstract class Shape
                     }
 
                     if (state == AnimationState.FORWARD
-                    		&& scaledTime > duration)
+                            && scaledTime > duration)
                     {
                         state = AnimationState.BACKWARD;
-                        postOnAnimationRepeat();
+                        dispatchAnimationEvent(animationRepeated);
                     }
                     else if (state == AnimationState.BACKWARD
-                    		&& scaledTime < duration)
+                            && scaledTime < duration)
                     {
                         state = AnimationState.FORWARD;
-                        postOnAnimationRepeat();
+                        dispatchAnimationEvent(animationRepeated);
                     }
 
                     break;
@@ -1625,10 +1672,10 @@ public abstract class Shape
             {
                 if (removeWhenComplete)
                 {
-                	getShape().remove();
+                    getShape().remove();
                 }
 
-                postOnAnimationDone();
+                dispatchAnimationEvent(animationEnded);
             }
 
             lastTime = scaledTime;
@@ -1638,69 +1685,33 @@ public abstract class Shape
 
 
         // ----------------------------------------------------------
-        private void postOnAnimationStart()
+        private void dispatchAnimationEvent(final EventDispatcher event)
         {
-        	boolean result = onAnimationStart.callMethodOn(getShape(), this);
-        	
-        	if (!result)
-        	{
-        		ShapeView view = getShape().getParentView();
-        		
-        		if (view != null)
-        		{
-	        		result = onAnimationStart.callMethodOn(view, this);
-	        		
-	        		if (!result)
-	        		{
-	        			onAnimationStart.callMethodOn(view.getContext(), this);
-	        		}
-        		}
-        	}
-        }
+            if (event == null)
+            {
+                return;
+            }
 
+            final ShapeView view = getShape().getParentView();
+            if (view != null)
+            {
+                view.post(new Runnable() {
+                    public void run()
+                    {
+                        boolean result = event.dispatch(getShape(), this);
 
-        // ----------------------------------------------------------
-        private void postOnAnimationRepeat()
-        {
-        	boolean result = onAnimationRepeat.callMethodOn(getShape(), this);
-        	
-        	if (!result)
-        	{
-        		ShapeView view = getShape().getParentView();
+                        if (!result)
+                        {
+                            result = event.dispatch(view, this);
 
-        		if (view != null)
-        		{
-	        		result = onAnimationRepeat.callMethodOn(view, this);
-	        		
-	        		if (!result)
-	        		{
-	        			onAnimationRepeat.callMethodOn(
-	        					view.getContext(), this);
-	        		}
-        		}
-        	}
-        }
-
-
-        // ----------------------------------------------------------
-        private void postOnAnimationDone()
-        {
-        	boolean result = onAnimationDone.callMethodOn(getShape(), this);
-        	
-        	if (!result)
-        	{
-        		ShapeView view = getShape().getParentView();
-
-        		if (view != null)
-        		{
-	        		result = onAnimationDone.callMethodOn(view, this);
-	        		
-	        		if (!result)
-	        		{
-	        			onAnimationDone.callMethodOn(view.getContext(), this);
-	        		}
-        		}
-        	}
+                            if (!result)
+                            {
+                                event.dispatch(view.getContext(), this);
+                            }
+                        }
+                    }
+                });
+            }
         }
     }
 }
