@@ -1698,17 +1698,12 @@ public abstract class Shape
                 view.post(new Runnable() {
                     public void run()
                     {
-                        boolean result = event.dispatch(getShape(), this);
-
-                        if (!result)
-                        {
-                            result = event.dispatch(view, this);
-
-                            if (!result)
-                            {
-                                event.dispatch(view.getContext(), this);
-                            }
-                        }
+                        @SuppressWarnings("unused")
+                        boolean result =
+                                   event.dispatch(getShape(), Animator.this)
+                                || event.dispatch(view, Animator.this)
+                                || event.dispatch(
+                                        view.getContext(), Animator.this);
                     }
                 });
             }
