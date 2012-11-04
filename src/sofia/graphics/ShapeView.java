@@ -10,6 +10,14 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 
+import org.jbox2d.callbacks.ContactImpulse;
+import org.jbox2d.callbacks.ContactListener;
+import org.jbox2d.collision.Manifold;
+import org.jbox2d.common.Vec2;
+import org.jbox2d.dynamics.World;
+import org.jbox2d.dynamics.contacts.Contact;
+
+import sofia.graphics.internal.Box2DUtils;
 import sofia.graphics.internal.GeometryUtils;
 import sofia.graphics.internal.ShapeAnimationManager;
 import sofia.graphics.internal.ShapeSorter;
@@ -53,6 +61,8 @@ public class ShapeView
     private Set<Long> threadsBlockingRepaint;
     private ShapeAnimationManager animationManager;
     private RepaintThread repaintThread;
+    private World b2World;
+    private PointF gravity;
 
     // Event forwarders
     private static final MotionEventDispatcher onTouchDown =
@@ -135,6 +145,10 @@ public class ShapeView
     // ----------------------------------------------------------
     private void init()
     {
+        gravity = new PointF(0f, -9.8f);
+        b2World = new World(Box2DUtils.pointFToVec2(gravity), true);
+        b2World.setContactListener(new ContactHandlers());
+
         threadsBlockingRepaint = new HashSet<Long>();
 
         getHolder().addCallback(new SurfaceHolderCallback());
@@ -167,6 +181,50 @@ public class ShapeView
         activeEdgeCollisions = new HashMap<Shape, ViewEdges>();
 
         setFocusableInTouchMode(true);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets the gravity of the physical world represented by this shape view.
+     *
+     * @return a {@code PointF} object whose x and y components are the
+     *     horizontal and vertical acceleration due to gravity (in units/sec^2)
+     *     of the physical world represented by this shape view
+     */
+    public PointF getGravity()
+    {
+        return gravity;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the gravity of the physical world represented by this shape view.
+     *
+     * @param gravity a {@code PointF} whose x and y components are the
+     *     horizontal and vertical acceleration due to gravity (in units/sec^2)
+     *     of the physical world represented by this shape view
+     */
+    public void setGravity(PointF gravity)
+    {
+        this.gravity = gravity;
+        b2World.setGravity(Box2DUtils.pointFToVec2(gravity));
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the gravity of the physical world represented by this shape view.
+     *
+     * @param xGravity the horizontal acceleration due to gravity (in
+     *     units/sec^2)
+     * @param yGravity the vertical acceleration due to gravity (in
+     *     units/sec^2)
+     */
+    public void setGravity(float xGravity, float yGravity)
+    {
+        setGravity(new PointF(xGravity, yGravity));
     }
 
 
@@ -1383,4 +1441,39 @@ public class ShapeView
             }
         }
     }*/
+
+
+    private class ContactHandlers implements ContactListener
+    {
+        // ------------------------------------------------------
+        public void beginContact(Contact contact)
+        {
+            // TODO Auto-generated method stub
+
+        }
+
+
+        // ------------------------------------------------------
+        public void endContact(Contact contact)
+        {
+            // TODO Auto-generated method stub
+
+        }
+
+
+        // ------------------------------------------------------
+        public void postSolve(Contact arg0, ContactImpulse arg1)
+        {
+            // TODO Auto-generated method stub
+
+        }
+
+
+        // ------------------------------------------------------
+        public void preSolve(Contact arg0, Manifold arg1)
+        {
+            // TODO Auto-generated method stub
+
+        }
+    }
 }
