@@ -39,8 +39,11 @@ public abstract class Shape
 {
     //~ Fields ................................................................
 
+    private static long ADD_TO_PARENT_COUNTER = 0;
+
     private RectF bounds;
     private int zIndex;
+    private long timeAddedToParent;
     private ShapeParent parent;
     private boolean visible;
     private Color color;
@@ -637,6 +640,19 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
+     * Gets the time that this shape was last added to its parent. Used
+     * internally to sort shapes when they have equal z-indices.
+     *
+     * @return the time that this shape was last added to its parent
+     */
+    /*package*/ final long getTimeAddedToParent()
+    {
+        return timeAddedToParent;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
      * Returns true if this shape is drawn in front of (later than) the
      * other shape.
      * @param other The shape to check against.
@@ -690,9 +706,10 @@ public abstract class Shape
      *
      * @param newParent The new parent.
      */
-    final void setParent(ShapeParent newParent)
+    /*package*/ final void setParent(ShapeParent newParent)
     {
         this.parent = newParent;
+        timeAddedToParent = (newParent != null) ? ADD_TO_PARENT_COUNTER++ : 0;
     }
 
 

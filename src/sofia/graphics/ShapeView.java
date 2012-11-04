@@ -327,6 +327,8 @@ public class ShapeView
         {
             for (Shape shape : addedShapes)
             {
+                shape.setParent(this);
+
                 if (getWidth() != 0 && getHeight() != 0)
                 {
                     GeometryUtils.resolveGeometry(shape.getBounds(), shape);
@@ -363,6 +365,8 @@ public class ShapeView
         {
             for (Shape shape : removedShapes)
             {
+                shape.setParent(null);
+
                 collisionChecker.removeObject(shape);
                 shapesWithPositionChanges.remove(shape);
             }
