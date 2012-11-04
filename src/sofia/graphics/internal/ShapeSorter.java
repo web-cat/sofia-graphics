@@ -122,7 +122,7 @@ public class ShapeSorter
 
         if (bounds instanceof ResolvableGeometry)
         {
-            return ((ResolvableGeometry) bounds).getShapeDependencies();
+            return ((ResolvableGeometry<?>) bounds).getShapeDependencies();
         }
         else
         {

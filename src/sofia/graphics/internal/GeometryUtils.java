@@ -1,16 +1,14 @@
 package sofia.graphics.internal;
 
-import sofia.graphics.CopyableGeometry;
-import android.graphics.RectF;
-import sofia.graphics.SizeF;
-import sofia.graphics.RelativeRect;
-import sofia.graphics.PointAndAnchor;
-import android.graphics.PointF;
 import java.util.Collections;
 import java.util.Set;
-import sofia.graphics.RelativePoint;
+
+import sofia.graphics.CopyableGeometry;
 import sofia.graphics.ResolvableGeometry;
 import sofia.graphics.Shape;
+import sofia.graphics.SizeF;
+import android.graphics.PointF;
+import android.graphics.RectF;
 
 // -------------------------------------------------------------------------
 /**
@@ -33,7 +31,7 @@ public class GeometryUtils
     {
         if (object instanceof ResolvableGeometry)
         {
-            return ((ResolvableGeometry) object).getShapeDependencies();
+            return ((ResolvableGeometry<?>) object).getShapeDependencies();
         }
         else
         {
@@ -47,7 +45,7 @@ public class GeometryUtils
     {
         if (object instanceof ResolvableGeometry)
         {
-            return ((ResolvableGeometry) object).isGeometryResolved();
+            return ((ResolvableGeometry<?>) object).isGeometryResolved();
         }
         else
         {
@@ -69,7 +67,7 @@ public class GeometryUtils
     {
         if (object instanceof ResolvableGeometry)
         {
-            ((ResolvableGeometry) object).resolveGeometry(shape);
+            ((ResolvableGeometry<?>) object).resolveGeometry(shape);
         }
     }
 
