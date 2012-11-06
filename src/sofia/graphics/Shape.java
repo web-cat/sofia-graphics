@@ -1,8 +1,18 @@
 package sofia.graphics;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
+import org.jbox2d.common.Vec2;
+import org.jbox2d.dynamics.Body;
+import org.jbox2d.dynamics.BodyDef;
+import org.jbox2d.dynamics.Fixture;
+import org.jbox2d.dynamics.FixtureDef;
+import org.jbox2d.dynamics.World;
+
+import sofia.graphics.internal.Box2DUtils;
 import sofia.graphics.internal.GeometryUtils;
 import sofia.graphics.internal.animation.AlphaTransformer;
 import sofia.graphics.internal.animation.AnimationState;
@@ -41,7 +51,6 @@ public abstract class Shape
 
     private static long ADD_TO_PARENT_COUNTER = 0;
 
-    private RectF bounds;
     private int zIndex;
     private long timeAddedToParent;
     private ShapeParent parent;
@@ -54,42 +63,560 @@ public abstract class Shape
     private Matrix inverseTransform;
     private float[][] rotatedCorners;
 
-    // Collision checker hook, for future location-based query extensions
-    @SuppressWarnings("unused")
-    private sofia.graphics.collision.CollisionChecker collisionChecker;
-    private sofia.graphics.collision.ShapeNode node;
+    // JBox2D support
+    private BodyDef b2BodyDef;
+    private Body b2Body;
+    private List<Fixture> b2Fixtures;
+    private float restitution;
+    private float density;
+    private float friction;
 
 
     //~ Constructors ..........................................................
 
     // ----------------------------------------------------------
     /**
-     * Creates a new shape with default bounds (located at the center of the
-     * screen and 100 pixels wide by 100 pixels tall).
+     * Creates a new shape.
      */
     public Shape()
     {
-        this(Anchor.CENTER.anchoredAt(Anchor.CENTER.ofView()).sized(100, 100));
+        this.zIndex = 0;
+        this.visible = true;
+        this.color = Color.white;
+        this.positionAnchor = new PointF(0, 0);
+
+        b2BodyDef = new BodyDef();
+        b2BodyDef.userData = this;
+
+        b2Fixtures = new ArrayList<Fixture>();
+    }
+
+
+    //~ Methods ...............................................................
+
+    // ----------------------------------------------------------
+    /*package*/ void createB2Body(World b2World)
+    {
+        b2Body = b2World.createBody(b2BodyDef);
+        createFixtures();
+    }
+
+
+    // ----------------------------------------------------------
+    /*package*/ void destroyB2Body(World b2World)
+    {
+        // TODO preserve data from b2body in b2bodydef
+        b2World.destroyBody(b2Body);
+        b2Body = null;
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Creates a new shape with the specified bounds.
+     * <p><strong>For advanced usage only.</strong> Gets the JBox2D
+     * {@code BodyDef} object that is used to create the rigid body represented
+     * by this shape. A couple caveats:
+     * </p>
+     * <ul>
+     * <li>The JBox2D {@code Body} is created when the shape is added to its
+     * parent (a {@link ShapeView} or {@link CompositeShape}), so changes to
+     * the returned {@code BodyDef} will only apply before that.</li>
+     * <li>Do not modify the {@code userData} property of the {@code BodyDef}
+     * object; it is used by Sofia to track the {@code Shape} that the
+     * {@code Body} represents.</li>
+     * </ul>
      *
-     * @param bounds The bounds of the shape.
+     * @return the JBox2D {@code BodyDef} object that this shape represents
      */
-    public Shape(RectF bounds)
+    public BodyDef getB2BodyDef()
     {
-        this.zIndex = 0;
-        this.bounds = GeometryUtils.copy(bounds);
-        this.visible = true;
-        this.color = Color.white;
-        this.positionAnchor = new PointF(0, 0);
+        return b2BodyDef;
     }
 
 
-    //~ Methods ...............................................................
+    // ----------------------------------------------------------
+    /**
+     * <strong>For advanced usage only.</strong> Gets the JBox2D
+     * {@code Body} object that this shape represents.
+     *
+     * @return the JBox2D {@code Body} object that this shape represents
+     */
+    public Body getB2Body()
+    {
+        return b2Body;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * TODO document
+     *
+     * @return
+     */
+    public ShapeMotion getMotionType()
+    {
+        return ShapeMotion.fromB2BodyType(b2BodyDef.type);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * TODO document
+     *
+     * @param motion
+     */
+    public void setMotionType(ShapeMotion motion)
+    {
+        // TODO should try recreating the body if this is called when the
+        // body already exists
+        b2BodyDef.type = motion.getB2BodyType();
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets a value indicating whether or not the shape is active. Inactive
+     * shapes are drawn on the screen but do not report contact/collisions with
+     * other shapes.
+     *
+     * @return true if the shape should be active and report contact/collision
+     *     with other shapes; false if it should not
+     */
+    public boolean isActive()
+    {
+        if (b2Body != null)
+        {
+            return b2Body.isActive();
+        }
+        else
+        {
+            return b2BodyDef.active;
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets a value indicating whether or not the shape is active. Inactive
+     * shapes are drawn on the screen but do not report contact/collisions with
+     * other shapes.
+     *
+     * @param isActive true if the shape should be active and report
+     *     contact/collision with other shapes; false if it should not
+     */
+    public void setActive(boolean isActive)
+    {
+        if (b2Body != null)
+        {
+            b2Body.setActive(isActive);
+        }
+        else
+        {
+            b2BodyDef.active = isActive;
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets the coefficient of restitution, which controls the "bounciness" of
+     * the shape.
+     *
+     * @return the coefficient of restitution
+     */
+    public float getRestitution()
+    {
+        return restitution;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the coefficient of restitution, which controls the "bounciness" of
+     * the shape.
+     *
+     * @param newRestitution the new coefficient of restitution
+     */
+    public void setRestitution(float newRestitution)
+    {
+        restitution = newRestitution;
+
+        for (Fixture fixture : b2Fixtures)
+        {
+            fixture.setRestitution(restitution);
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets the coefficient of friction for the shape.
+     *
+     * @return the coefficient of friction for the shape
+     */
+    public float getFriction()
+    {
+        return friction;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Set the coefficient of friction for the shape.
+     *
+     * @param newFriction the coefficient of friction for the shape
+     */
+    public void setFriction(float newFriction)
+    {
+        friction = newFriction;
+
+        for (Fixture fixture : b2Fixtures)
+        {
+            fixture.setFriction(friction);
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets the density of the shape. The mass of the shape is computed by
+     * multiplying the density of the shape by its surface area.
+     *
+     * @return the density of the shape
+     */
+    public float getDensity()
+    {
+        return density;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the density of the shape. The mass of the shape is computed by
+     * multiplying the density of the shape by its surface area.
+     *
+     * @param newDensity the density of the shape
+     */
+    public void setDensity(float newDensity)
+    {
+        density = newDensity;
+
+        for (Fixture fixture : b2Fixtures)
+        {
+            fixture.setDensity(density);
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets a value indicating whether this shape is a "bullet." Bullets are
+     * very fast moving objects that require more precise contact/collision
+     * handling than ordinary objects, and they require more processing power
+     * as a result.
+     *
+     * @return true if this shape uses more precise "bullet" contact/collision
+     *     handling, or false if it does not
+     */
+    public boolean isBullet()
+    {
+        if (b2Body != null)
+        {
+            return b2Body.isBullet();
+        }
+        else
+        {
+            return b2BodyDef.bullet;
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets a value indicating whether this shape is a "bullet." Bullets are
+     * very fast moving objects that require more precise contact/collision
+     * handling than ordinary objects, and they require more processing power
+     * as a result.
+     *
+     * @return true if this shape uses more precise "bullet" contact/collision
+     *     handling, or false if it does not
+     */
+    public void setBullet(boolean bullet)
+    {
+        if (b2Body != null)
+        {
+            b2Body.setBullet(true);
+        }
+        else
+        {
+            b2BodyDef.bullet = bullet;
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets the angular velocity of the shape, in degrees per second. (Note
+     * that this is different from JBox2D, which uses radians per second. We
+     * use degrees for consistency with the rest of the Android graphics
+     * subsystem.)
+     *
+     * @return the angular velocity of the shape, in degrees per second
+     */
+    public float getAngularVelocity()
+    {
+        float radsPerSec;
+
+        if (b2Body != null)
+        {
+            radsPerSec = b2Body.getAngularVelocity();
+        }
+        else
+        {
+            radsPerSec = b2BodyDef.angularVelocity;
+        }
+
+        return (float) Math.toDegrees(radsPerSec);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the angular velocity of the shape, in degrees per second. (Note
+     * that this is different from JBox2D, which uses radians per second. We
+     * use degrees for consistency with the rest of the Android graphics
+     * subsystem.)
+     *
+     * @param newVelocity the angular velocity of the shape, in degrees per
+     *     second
+     */
+    public void setAngularVelocity(float newVelocity)
+    {
+        float radsPerSec = (float) Math.toRadians(newVelocity);
+
+        if (b2Body != null)
+        {
+            b2Body.setAngularVelocity(radsPerSec);
+        }
+        else
+        {
+            b2BodyDef.angularVelocity = radsPerSec;
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets the linear velocity of the center of mass of the shape, in
+     * units per second.
+     *
+     * @return the linear velocity of the center of mass of the shape, in units
+     *     per second
+     */
+    public PointF getLinearVelocity()
+    {
+        Vec2 velocity;
+
+        if (b2Body != null)
+        {
+            velocity = b2Body.getLinearVelocity();
+        }
+        else
+        {
+            velocity = b2BodyDef.linearVelocity;
+        }
+
+        return Box2DUtils.vec2ToPointF(velocity);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the linear velocity of the center of mass of the shape, in units
+     * per second.
+     *
+     * @param newVelocity the linear velocity of the center of mass of the
+     *     shape, in units per second
+     */
+    public void setLinearVelocity(PointF newVelocity)
+    {
+        Vec2 vec = Box2DUtils.pointFToVec2(newVelocity);
+
+        if (b2Body != null)
+        {
+            b2Body.setLinearVelocity(vec);
+        }
+        else
+        {
+            b2BodyDef.linearVelocity = vec;
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the linear velocity of the center of mass of the shape, in units
+     * per second.
+     *
+     * @param xVelocity the horizontal linear velocity of the center of mass of
+     *     the shape, in units per second
+     * @param yVelocity the vertical linear velocity of the center of mass of
+     *     the shape, in units per second
+     */
+    public void setLinearVelocity(float xVelocity, float yVelocity)
+    {
+        setLinearVelocity(new PointF(xVelocity, yVelocity));
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * <strong>This method is intended for internal use only, or by advanced
+     * users subclassing one of the abstract shape types.</strong> Subclasses
+     * must override this method to create the necessary fixtures for the body
+     * that this shape represents. Use the {@link #getB2Body()} method to access
+     * the body when creating fixtures.
+     */
+    protected abstract void createFixtures();
+
+
+    // ----------------------------------------------------------
+    /**
+     * Destroys the fixtures associated with this shape. Most subclasses will
+     * not need to call this method directly; instead, they should call
+     * {@link #recreateFixtures()} when the shape changes in a way that
+     * requires its fixtures to be recreated (such as when its size changes).
+     */
+    protected void destroyFixtures()
+    {
+        Body body = getB2Body();
+
+        if (body != null)
+        {
+            Fixture current = body.getFixtureList();
+            while (current != null)
+            {
+                Fixture next = current.getNext();
+                current.destroy();
+
+                current = next;
+            }
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Destroys and recreates the shape's fixtures. Subclasses should call this
+     * method when a property of the shape changes that require its fixtures to
+     * be recreated, such as when its size changes.
+     */
+    protected void recreateFixtures()
+    {
+        if (b2Body != null)
+        {
+            destroyFixtures();
+            createFixtures();
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * TODO document
+     *
+     * @param angle the rotation angle, in <strong>radians</strong> (note that
+     *     this is different from the public interface, which uses degrees)
+     */
+    protected void updateTransform(float angle)
+    {
+        Vec2 position;
+
+        if (b2Body == null)
+        {
+            position = b2BodyDef.position;
+        }
+        else
+        {
+            position = b2Body.getPosition();
+        }
+
+        updateTransform(position.x, position.y, angle);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * TODO document
+     *
+     * @param x the x-coordinate of the position of the centroid of the shape
+     * @param y the y-coordinate of the position of the centroid of the shape
+     */
+    protected void updateTransform(float x, float y)
+    {
+        float angle;
+
+        if (b2Body == null)
+        {
+            angle = b2BodyDef.angle;
+        }
+        else
+        {
+            angle = b2Body.getAngle();
+        }
+
+        updateTransform(x, y, angle);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * TODO document
+     *
+     * @param x the x-coordinate of the position of the centroid of the shape
+     * @param y the y-coordinate of the position of the centroid of the shape
+     * @param angle the rotation angle, in <strong>radians</strong> (note that
+     *     this is different from the public interface, which uses degrees)
+     */
+    protected void updateTransform(float x, float y, float angle)
+    {
+        Vec2 position = new Vec2(x, y);
+
+        if (b2Body == null)
+        {
+            b2BodyDef.position = position;
+            b2BodyDef.angle = angle;
+        }
+        else
+        {
+            b2Body.setTransform(position, angle);
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * This method should only be called internally from within
+     * {@link #createFixtures(Body)} in order to create fixtures for the shape
+     * and add them to the shape's internal list of fixtures.
+     *
+     * @param b2Shape a JBox2D shape that represents part or all of this
+     *     shape
+     * @param body the body type of the shape
+     */
+    protected void addFixtureForShape(
+            org.jbox2d.collision.shapes.Shape b2Shape)
+    {
+        FixtureDef fd = new FixtureDef();
+        fd.restitution = restitution;
+        fd.friction = friction;
+        fd.density = density;
+        fd.shape = b2Shape;
+        fd.userData = this;
+
+        b2Fixtures.add(b2Body.createFixture(fd));
+    }
+
 
     // ----------------------------------------------------------
     /**
@@ -137,7 +664,8 @@ public abstract class Shape
      */
     public RectF getBounds()
     {
-        return bounds;
+        // FIXME
+        return null;
     }
 
 
@@ -151,15 +679,7 @@ public abstract class Shape
      */
     public void setBounds(RectF newBounds)
     {
-        this.bounds = GeometryUtils.copy(newBounds);
-
-        if (getShapeParent() != null)
-        {
-            GeometryUtils.resolveGeometry(this.bounds, this);
-        }
-
-        notifyParentOfPositionChange();
-        conditionallyRepaint();
+        //FIXME
     }
 
 
@@ -221,7 +741,18 @@ public abstract class Shape
      */
     public float getRotation()
     {
-        return rotation;
+        float rads;
+
+        if (b2Body != null)
+        {
+            rads = b2Body.getAngle();
+        }
+        else
+        {
+            rads = b2BodyDef.angle;
+        }
+
+        return (float) Math.toDegrees(rads);
     }
 
 
@@ -232,10 +763,10 @@ public abstract class Shape
      *
      * @return The point around which the shape's rotation will pivot.
      */
-    public PointF getRotationPivot()
+    /*public PointF getRotationPivot()
     {
         return rotationPivot;
-    }
+    }*/
 
 
     // ----------------------------------------------------------
@@ -247,7 +778,9 @@ public abstract class Shape
      */
     public void setRotation(float newRotation)
     {
-        setRotation(newRotation, Anchor.CENTER.of(this));
+        //setRotation(newRotation, Anchor.CENTER.of(this));
+        float rads = (float) Math.toRadians(newRotation);
+        updateTransform(rads);
     }
 
 
@@ -259,7 +792,7 @@ public abstract class Shape
      * @param newRotation The new angle of rotation of the shape.
      * @param newPivot    The point around which the rotation will pivot.
      */
-    public void setRotation(float newRotation, PointF newPivot)
+    /*public void setRotation(float newRotation, PointF newPivot)
     {
         this.rotation = newRotation;
         this.rotationPivot = newPivot;
@@ -267,7 +800,7 @@ public abstract class Shape
         updateTransform();
         notifyParentOfPositionChange();
         conditionallyRepaint();
-    }
+    }*/
 
 
     // ----------------------------------------------------------
@@ -351,7 +884,7 @@ public abstract class Shape
      *         bounding box.
      * @see #setPositionAnchor(Anchor)
      */
-    public float getX()
+    /*public float getX()
     {
         return getBounds().left + positionAnchor.x;
     }
@@ -368,7 +901,7 @@ public abstract class Shape
      *          bounding box.
      * @see #setPositionAnchor(Anchor)
      */
-    public void setX(float x)
+    /*public void setX(float x)
     {
         getBounds().offsetTo(x - positionAnchor.x, getBounds().top);
         notifyParentOfPositionChange();
@@ -385,7 +918,7 @@ public abstract class Shape
      *         bounding box.
      * @see #setPositionAnchor(Anchor)
      */
-    public float getY()
+    /*public float getY()
     {
         return getBounds().top + positionAnchor.y;
     }
@@ -402,7 +935,7 @@ public abstract class Shape
      *          bounding box.
      * @see #setPositionAnchor(Anchor)
      */
-    public void setY(float y)
+    /*public void setY(float y)
     {
         getBounds().offsetTo(getBounds().left, y - positionAnchor.y);
         notifyParentOfPositionChange();
@@ -416,7 +949,7 @@ public abstract class Shape
      *
      * @return The width of the shape.
      */
-    public float getWidth()
+    /*public float getWidth()
     {
         return getBounds().width();
     }
@@ -428,7 +961,7 @@ public abstract class Shape
      *
      * @return The height of the shape.
      */
-    public float getHeight()
+    /*public float getHeight()
     {
         return getBounds().height();
     }
@@ -442,7 +975,7 @@ public abstract class Shape
      *
      * @return A {@link PointF} object describing the origin of the shape.
      */
-    public PointF getPosition()
+    /*public PointF getPosition()
     {
         return new PointF(
             bounds.left + positionAnchor.x,
@@ -457,7 +990,7 @@ public abstract class Shape
      * @param x the x-coordinate of the desired origin of the shape
      * @param y the y-coordinate of the desired origin of the shape
      */
-    public void setPosition(float x, float y)
+    /*public void setPosition(float x, float y)
     {
         bounds.offsetTo(
             x - positionAnchor.x,
@@ -474,7 +1007,7 @@ public abstract class Shape
      * @param position A {@link PointF} object describing the origin of the
      *                 shape.
      */
-    public void setPosition(PointF position)
+    /*public void setPosition(PointF position)
     {
         setPosition(position.x, position.y);
     }
@@ -488,7 +1021,7 @@ public abstract class Shape
      * @param pointAndAnchor A {@link PointAndAnchor} object describing the
      *                       position of the shape.
      */
-    public void setPosition(PointAndAnchor pointAndAnchor)
+    /*public void setPosition(PointAndAnchor pointAndAnchor)
     {
         bounds = pointAndAnchor.sized(bounds.width(), bounds.height());
         bounds.offset(-positionAnchor.x, -positionAnchor.y);
@@ -506,7 +1039,7 @@ public abstract class Shape
      * @param dx The number of pixels to move the shape horizontally.
      * @param dy The number of pixels to move the shape vertically.
      */
-    public void move(float dx, float dy)
+    /*public void move(float dx, float dy)
     {
         bounds.offset(dx, dy);
         notifyParentOfPositionChange();
@@ -937,8 +1470,7 @@ public abstract class Shape
     public String toString()
     {
         return getClass().getSimpleName() + ": "
-            + "bounds=" + bounds + ", isVisible=" + visible
-            + ", color=" + color;
+            + "isVisible=" + visible + ", color=" + color;
     }
 
 
@@ -1070,28 +1602,6 @@ public abstract class Shape
         }
 
         return new ViewEdges(left, top, right, bottom);
-    }
-
-
-    // ----------------------------------------------------------
-    /* package */ sofia.graphics.collision.ShapeNode getShapeNode()
-    {
-        return node;
-    }
-
-
-    // ----------------------------------------------------------
-    /* package */ void setShapeNode(sofia.graphics.collision.ShapeNode node)
-    {
-        this.node = node;
-    }
-
-
-    // ----------------------------------------------------------
-    /* package */ void setCollisionChecker(
-        sofia.graphics.collision.CollisionChecker collisionChecker)
-    {
-        this.collisionChecker = collisionChecker;
     }
 
 

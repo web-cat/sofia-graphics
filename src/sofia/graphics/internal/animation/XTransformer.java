@@ -24,14 +24,14 @@ public class XTransformer implements PropertyTransformer
     // ----------------------------------------------------------
     public void onStart()
     {
-        start = GeometryUtils.copy(shape.getPosition());
+        //start = GeometryUtils.copy(shape.getPosition());
     }
 
 
     // ----------------------------------------------------------
     public void transform(float t)
     {
-        shape.setPosition(new PointF(
-            start.x + (end - start.x) * t, start.y));
+        /*shape.setPosition(new PointF(
+            start.x + (end - start.x) * t, start.y));*/
     }
 }

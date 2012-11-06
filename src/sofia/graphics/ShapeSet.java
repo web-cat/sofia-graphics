@@ -58,48 +58,48 @@ public class ShapeSet
     //~ Methods ...............................................................
 
     // ----------------------------------------------------------
-    public boolean add(Shape shape)
+    public synchronized boolean add(Shape shape)
     {
         boolean result = treeSet.add(shape);
-        parent.onShapesAdded(Collections.singleton(shape));
+        sendOnShapesAdded(Collections.singleton(shape));
         return result;
     }
 
 
     // ----------------------------------------------------------
-    public boolean addAll(Collection<? extends Shape> collection)
+    public synchronized boolean addAll(Collection<? extends Shape> collection)
     {
         boolean result = treeSet.addAll(collection);
-        parent.onShapesAdded(collection);
+        sendOnShapesAdded(collection);
         return result;
     }
 
 
     // ----------------------------------------------------------
-    public void clear()
+    public synchronized void clear()
     {
         TreeSet<Shape> oldTreeSet = treeSet;
         treeSet = new TreeSet<Shape>(zorder);
-        parent.onShapesRemoved(oldTreeSet);
+        sendOnShapesRemoved(oldTreeSet);
     }
 
 
     // ----------------------------------------------------------
-    public boolean contains(Object object)
+    public synchronized boolean contains(Object object)
     {
         return treeSet.contains(object);
     }
 
 
     // ----------------------------------------------------------
-    public boolean containsAll(Collection<?> collection)
+    public synchronized boolean containsAll(Collection<?> collection)
     {
         return treeSet.contains(collection);
     }
 
 
     // ----------------------------------------------------------
-    public boolean isEmpty()
+    public synchronized boolean isEmpty()
     {
         return treeSet.isEmpty();
     }
@@ -118,7 +118,7 @@ public class ShapeSet
      * "back" (bottom) in terms of drawing order.
      * @return An iterator representing this traversal order.
      */
-    public Iterator<Shape> frontToBackIterator()
+    public synchronized Iterator<Shape> frontToBackIterator()
     {
         Shape[] array = new Shape[size()];
         treeSet.toArray(array);
@@ -128,13 +128,13 @@ public class ShapeSet
 
 
     // ----------------------------------------------------------
-    public boolean remove(Object object)
+    public synchronized boolean remove(Object object)
     {
         boolean result = treeSet.remove(object);
 
         if (result)
         {
-            parent.onShapesRemoved(Collections.singleton((Shape) object));
+            sendOnShapesRemoved(Collections.singleton((Shape) object));
         }
 
         return result;
@@ -142,7 +142,7 @@ public class ShapeSet
 
 
     // ----------------------------------------------------------
-    public boolean removeAll(Collection<?> collection)
+    public synchronized boolean removeAll(Collection<?> collection)
     {
         boolean modified = false;
 
@@ -165,7 +165,7 @@ public class ShapeSet
 
         if (modified)
         {
-            parent.onShapesRemoved(removedShapes);
+            sendOnShapesRemoved(removedShapes);
         }
 
         return modified;
@@ -173,7 +173,7 @@ public class ShapeSet
 
 
     // ----------------------------------------------------------
-    public boolean retainAll(Collection<?> collection)
+    public synchronized boolean retainAll(Collection<?> collection)
     {
         boolean modified = false;
 
@@ -193,7 +193,7 @@ public class ShapeSet
 
         if (modified)
         {
-            parent.onShapesRemoved(removedShapes);
+            sendOnShapesRemoved(removedShapes);
         }
 
         return modified;
@@ -201,14 +201,14 @@ public class ShapeSet
 
 
     // ----------------------------------------------------------
-    public int size()
+    public synchronized int size()
     {
         return treeSet.size();
     }
 
 
     // ----------------------------------------------------------
-    public Shape[] toArray()
+    public synchronized Shape[] toArray()
     {
         Shape[] result = new Shape[treeSet.size()];
         return toArray(result);
@@ -216,7 +216,7 @@ public class ShapeSet
 
 
     // ----------------------------------------------------------
-    public <T> T[] toArray(T[] array)
+    public synchronized <T> T[] toArray(T[] array)
     {
         return treeSet.toArray(array);
     }
@@ -252,12 +252,32 @@ public class ShapeSet
      * Change the shape order for this shape set.
      * @param order The new ordering to use.
      */
-    public void setDrawingOrder(ZIndexComparator order)
+    public synchronized void setDrawingOrder(ZIndexComparator order)
     {
         TreeSet<Shape> newSet = new TreeSet<Shape>(order);
         newSet.addAll(treeSet);
         zorder = order;
         treeSet = newSet;
+    }
+
+
+    // ----------------------------------------------------------
+    private void sendOnShapesAdded(Iterable<? extends Shape> shapesAdded)
+    {
+        if (parent != null)
+        {
+            parent.onShapesAdded(shapesAdded);
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    private void sendOnShapesRemoved(Iterable<? extends Shape> shapesRemoved)
+    {
+        if (parent != null)
+        {
+            parent.onShapesRemoved(shapesRemoved);
+        }
     }
 
 
@@ -282,31 +302,40 @@ public class ShapeSet
         // ----------------------------------------------------------
         public boolean hasNext()
         {
-            return iterator.hasNext();
+            synchronized (ShapeSet.this)
+            {
+                return iterator.hasNext();
+            }
         }
 
 
         // ----------------------------------------------------------
         public Shape next()
         {
-            lastShape = iterator.next();
-            return lastShape;
+            synchronized (ShapeSet.this)
+            {
+                lastShape = iterator.next();
+                return lastShape;
+            }
         }
 
 
         // ----------------------------------------------------------
         public void remove()
         {
-            iterator.remove();
-
-            if (lastShape != null)
+            synchronized (ShapeSet.this)
             {
-                if (notifyParent)
-                {
-                    parent.onShapesRemoved(Collections.singleton(lastShape));
-                }
+                iterator.remove();
 
-                lastShape = null;
+                if (lastShape != null)
+                {
+                    if (notifyParent)
+                    {
+                        sendOnShapesRemoved(Collections.singleton(lastShape));
+                    }
+
+                    lastShape = null;
+                }
             }
         }
     }

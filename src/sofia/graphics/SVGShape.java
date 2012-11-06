@@ -13,45 +13,45 @@ import com.larvalabs.svgandroid.SVGParser;
 //-------------------------------------------------------------------------
 /**
  * A shape that displays an SVG image loaded from a {@code R.raw} resource.
- * 
+ *
  * @author  Tony Allevato
  * @author  Last changed by $Author$
  * @version $Date$
  */
 public class SVGShape extends DrawableShape
 {
-	//~ Fields ................................................................
+    //~ Fields ................................................................
 
-	private static SparseArray<Drawable> svgCache =
-			new SparseArray<Drawable>();
+    private static SparseArray<Drawable> svgCache =
+            new SparseArray<Drawable>();
 
-	private int rawResourceId;
+    private int rawResourceId;
 
 
-	//~ Constructors ..........................................................
-
-    // ----------------------------------------------------------
-	/**
-	 * Creates a {@code SVGShape} using an SVG resource, stretched to fit the
-	 * specified bounds.
-	 * 
-	 * @param rawResourceId the {@code R.raw} resource that contains the SVG
-	 *     data
-	 * @param bounds the bounding rectangle
-	 */
-	public SVGShape(int rawResourceId, RectF bounds)
-	{
-		super(null, bounds);
-		this.rawResourceId = rawResourceId;
-	}
-	
-	
-	//~ Methods ...............................................................
+    //~ Constructors ..........................................................
 
     // ----------------------------------------------------------
-	@Override
-	public void draw(Canvas canvas)
-	{
+    /**
+     * Creates a {@code SVGShape} using an SVG resource, stretched to fit the
+     * specified bounds.
+     *
+     * @param rawResourceId the {@code R.raw} resource that contains the SVG
+     *     data
+     * @param bounds the bounding rectangle
+     */
+    public SVGShape(int rawResourceId, RectF bounds)
+    {
+        super(null, bounds);
+        this.rawResourceId = rawResourceId;
+    }
+
+
+    //~ Methods ...............................................................
+
+    // ----------------------------------------------------------
+    @Override
+    public void draw(Canvas canvas)
+    {
         if (getDrawable() == null && rawResourceId != 0)
         {
             loadDrawableFromResource();
@@ -59,29 +59,29 @@ public class SVGShape extends DrawableShape
 
         Drawable drawable = getDrawable();
 
-		int width = drawable.getIntrinsicWidth();
-		int height = drawable.getIntrinsicHeight();
+/*		int width = drawable.getIntrinsicWidth();
+        int height = drawable.getIntrinsicHeight();
 
-		float xratio = getWidth() / width;
-		float yratio = getHeight() / height;
+        float xratio = getWidth() / width;
+        float yratio = getHeight() / height;
 
-		canvas.save();
-		canvas.translate(getX(), getY());
-		canvas.scale(xratio, yratio);
+        canvas.save();
+        canvas.translate(getX(), getY());
+        canvas.scale(xratio, yratio);
 
-		drawable.draw(canvas);
+        drawable.draw(canvas);
+*/
+        canvas.restore();
+    }
 
-		canvas.restore();
-	}
-	
-	
+
     // ----------------------------------------------------------
     private void loadDrawableFromResource()
     {
-    	Drawable cached = svgCache.get(rawResourceId);
+        Drawable cached = svgCache.get(rawResourceId);
 
-    	if (cached == null)
-    	{
+        if (cached == null)
+        {
             Resources res = getParentView().getResources();
             SVG svg = SVGParser.getSVGFromResource(res, rawResourceId);
             cached = svg.createPictureDrawable();
@@ -93,9 +93,9 @@ public class SVGShape extends DrawableShape
             bounds.right = (int) limits.width();
             bounds.bottom = (int) limits.height();
             cached.setBounds(bounds);
-            
+
             svgCache.put(rawResourceId, cached);
-    	}
+        }
 
         setDrawable(cached);
     }

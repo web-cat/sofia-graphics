@@ -2,6 +2,7 @@ package sofia.graphics;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -14,9 +15,12 @@ import org.jbox2d.callbacks.ContactImpulse;
 import org.jbox2d.callbacks.ContactListener;
 import org.jbox2d.collision.Manifold;
 import org.jbox2d.common.Vec2;
+import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.World;
 import org.jbox2d.dynamics.contacts.Contact;
 
+import sofia.app.internal.LifecycleInjection;
+import sofia.app.internal.ScreenMixin;
 import sofia.graphics.internal.Box2DUtils;
 import sofia.graphics.internal.GeometryUtils;
 import sofia.graphics.internal.ShapeAnimationManager;
@@ -31,6 +35,7 @@ import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -61,8 +66,11 @@ public class ShapeView
     private Set<Long> threadsBlockingRepaint;
     private ShapeAnimationManager animationManager;
     private RepaintThread repaintThread;
+    private PhysicsThread physicsThread;
+    private CoordinateSystem coordinateSystem;
+
+    // JBox2D support
     private World b2World;
-    private PointF gravity;
 
     // Event forwarders
     private static final MotionEventDispatcher onTouchDown =
@@ -88,7 +96,6 @@ public class ShapeView
     private static final ReversibleEventDispatcher onCollisionBetween =
             new ReversibleEventDispatcher("onCollisionBetween");
 
-    private sofia.graphics.collision.CollisionChecker collisionChecker;
     private Shape shapeBeingDragged;
     private Set<Shape> unresolvedShapes;
     private Set<Shape> shapesWithPositionChanges;
@@ -143,10 +150,16 @@ public class ShapeView
     //~ Methods ...............................................................
 
     // ----------------------------------------------------------
+    public CoordinateSystem getCoordinateSystem()
+    {
+        return coordinateSystem;
+    }
+
+
+    // ----------------------------------------------------------
     private void init()
     {
-        gravity = new PointF(0f, -9.8f);
-        b2World = new World(Box2DUtils.pointFToVec2(gravity), true);
+        b2World = new World(new Vec2(0, 0));
         b2World.setContactListener(new ContactHandlers());
 
         threadsBlockingRepaint = new HashSet<Long>();
@@ -168,19 +181,29 @@ public class ShapeView
 
         gestureDetectors = new ArrayList<Object>();
 
-        repaintThread = new RepaintThread();
-        animationManager = new ShapeAnimationManager(this);
-
-        repaintThread.start();
-        animationManager.start();
-
-        collisionChecker = new sofia.graphics.collision.IBSPColChecker();
         shapesWithPositionChanges = new HashSet<Shape>();
         unresolvedShapes = new HashSet<Shape>();
         activeCollisions = new HashMap<Shape, Set<Shape>>();
         activeEdgeCollisions = new HashMap<Shape, ViewEdges>();
 
+        coordinateSystem = new CoordinateSystem(this);
+
         setFocusableInTouchMode(true);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * <strong>This method is intended for internal and advanced usage
+     * only.</strong> Gets the JBox2D {@code World} that manages the physical
+     * bodies inside this shape view.
+     *
+     * @return the JBox2D world that manages the physical bodies inside this
+     *     shape view
+     */
+    public World getB2World()
+    {
+        return b2World;
     }
 
 
@@ -194,7 +217,7 @@ public class ShapeView
      */
     public PointF getGravity()
     {
-        return gravity;
+        return Box2DUtils.vec2ToPointF(b2World.getGravity());
     }
 
 
@@ -208,7 +231,6 @@ public class ShapeView
      */
     public void setGravity(PointF gravity)
     {
-        this.gravity = gravity;
         b2World.setGravity(Box2DUtils.pointFToVec2(gravity));
     }
 
@@ -342,10 +364,7 @@ public class ShapeView
      */
     public void add(Shape shape)
     {
-        synchronized (shapes)
-        {
-            shapes.add(shape);
-        }
+        shapes.add(shape);
     }
 
 
@@ -356,10 +375,7 @@ public class ShapeView
      */
     public void remove(Shape shape)
     {
-        synchronized (shapes)
-        {
-            shapes.remove(shape);
-        }
+        shapes.remove(shape);
     }
 
 
@@ -369,10 +385,7 @@ public class ShapeView
      */
     public void clear()
     {
-        synchronized (shapes)
-        {
-            shapes.clear();
-        }
+        shapes.clear();
     }
 
 
@@ -386,13 +399,13 @@ public class ShapeView
             for (Shape shape : addedShapes)
             {
                 shape.setParent(this);
+                shape.createB2Body(b2World);
 
                 if (getWidth() != 0 && getHeight() != 0)
                 {
                     GeometryUtils.resolveGeometry(shape.getBounds(), shape);
                     if (GeometryUtils.isGeometryResolved(shape.getBounds()))
                     {
-                        collisionChecker.addObject(shape);
                         shapesWithPositionChanges.add(shape);
                     }
                     else
@@ -423,9 +436,9 @@ public class ShapeView
         {
             for (Shape shape : removedShapes)
             {
+                shape.destroyB2Body(b2World);
                 shape.setParent(null);
 
-                collisionChecker.removeObject(shape);
                 shapesWithPositionChanges.remove(shape);
             }
         }
@@ -466,7 +479,7 @@ public class ShapeView
         float x, float y, Class<MyShape> cls)
     {
         MyShape result = null;
-        for (MyShape candidate : collisionChecker.getObjectsAt(x, y, cls))
+        /*for (MyShape candidate : collisionChecker.getObjectsAt(x, y, cls))
         {
             // If multiple candidates, pick the one drawn last (in front)
             if (result == null
@@ -474,7 +487,7 @@ public class ShapeView
             {
                 result = candidate;
             }
-        }
+        }*/
         return result;
     }
 
@@ -540,7 +553,8 @@ public class ShapeView
     public <MyShape extends Shape> Set<MyShape> getShapesAt(
         float x, float y, Class<MyShape> cls)
     {
-        return collisionChecker.getObjectsAt(x, y, cls);
+        //FIXME
+        return Collections.<MyShape>emptySet(); //collisionChecker.getObjectsAt(x, y, cls);
     }
 
 
@@ -589,7 +603,7 @@ public class ShapeView
     public <MyShape extends Shape> Set<MyShape> getIntersectingShapes(
         Shape shape, Class<MyShape> cls)
     {
-        return collisionChecker.getIntersectingObjects(shape, cls);
+        return null; //collisionChecker.getIntersectingObjects(shape, cls);
     }
 
 
@@ -608,7 +622,7 @@ public class ShapeView
     public <MyShape extends Shape> MyShape getIntersectingShape(
         Shape shape, Class<MyShape> cls)
     {
-        return collisionChecker.getOneIntersectingObject(shape, cls);
+        return null; //collisionChecker.getOneIntersectingObject(shape, cls);
     }
 
 
@@ -630,7 +644,7 @@ public class ShapeView
     public <MyShape extends Shape> Set<MyShape> getShapesInRange(
         float x, float y, float r, Class<MyShape> cls)
     {
-        return collisionChecker.getObjectsInRange(x, y, r, cls);
+        return null; //collisionChecker.getObjectsInRange(x, y, r, cls);
     }
 
 
@@ -657,7 +671,7 @@ public class ShapeView
             throw new IllegalArgumentException(
                 "Distance must not be less than 0.0. It was: " + distance);
         }
-        return collisionChecker.getNeighbors(shape, distance, diag, cls);
+        return null; //collisionChecker.getNeighbors(shape, distance, diag, cls);
     }
 
 
@@ -680,8 +694,9 @@ public class ShapeView
     public <MyShape extends Shape> Set<MyShape> getShapesInDirection(
         float x, float y, float angle, float length, Class<MyShape> cls)
     {
-        return collisionChecker.getObjectsInDirection(
-            x, y, angle, length, cls);
+        return null;
+        //return collisionChecker.getObjectsInDirection(
+        //    x, y, angle, length, cls);
     }
 
 
@@ -753,6 +768,11 @@ public class ShapeView
     // ----------------------------------------------------------
     public void repaint()
     {
+        if (repaintThread == null)
+        {
+            return;
+        }
+
         synchronized (shapes)
         {
             // First, deal with unresolved shapes that may now be resolved
@@ -763,7 +783,7 @@ public class ShapeView
                 {
                     if (GeometryUtils.isGeometryResolved(shape.getBounds()))
                     {
-                        collisionChecker.addObject(shape);
+                        //collisionChecker.addObject(shape);
                         shapesWithPositionChanges.add(shape);
                     }
                     else
@@ -774,12 +794,12 @@ public class ShapeView
                 unresolvedShapes = stillUnresolved;
             }
 
-            if (shapesWithPositionChanges.size() > 0)
+            /*if (shapesWithPositionChanges.size() > 0)
             {
                 // Second, update all positions in the collision checker
                 for (Shape shape : shapesWithPositionChanges)
                 {
-                    collisionChecker.updateObjectLocation(shape);
+                    //collisionChecker.updateObjectLocation(shape);
                 }
 
                 // Now, fire collision handlers
@@ -907,7 +927,7 @@ public class ShapeView
 
                 // Finally, clear the list of pending shapes that have moved
                 shapesWithPositionChanges.clear();
-            }
+            }*/
         }
 
         repaintThread.repaintIfNecessary();
@@ -929,20 +949,23 @@ public class ShapeView
             {
                 canvas = getHolder().lockCanvas(null);
 
-                synchronized (getHolder())
+                if (canvas != null)
                 {
-                    Drawable background = getBackground();
-
-                    if (background != null)
+                    synchronized (getHolder())
                     {
-                        background.draw(canvas);
-                    }
-                    else if (backgroundColor != null)
-                    {
-                        canvas.drawColor(backgroundColor.toRawColor());
-                    }
+                        Drawable background = getBackground();
 
-                    drawContents(canvas);
+                        if (background != null)
+                        {
+                            background.draw(canvas);
+                        }
+                        else if (backgroundColor != null)
+                        {
+                            canvas.drawColor(backgroundColor.toRawColor());
+                        }
+
+                        drawContents(canvas);
+                    }
                 }
             }
             finally
@@ -1017,13 +1040,16 @@ public class ShapeView
      */
     protected void drawContents(Canvas canvas)
     {
+        canvas.save();
+        coordinateSystem.applyTransform(canvas);
+
         synchronized (shapes)
         {
             for (Shape shape : shapes)
             {
                 if (shape.isVisible() && shape.getBounds() != null)
                 {
-                    Matrix xform = shape.getTransform();
+                    /*Matrix xform = shape.getTransform();
 
                     if (xform != null)
                     {
@@ -1042,17 +1068,21 @@ public class ShapeView
                             shape.getBounds().left, shape.getBounds().top);
                         canvas.save();
                         canvas.concat(xform);
-                    }
+                    }*/
+
+                    canvas.save();
+
+                    Vec2 pos = shape.getB2Body().getPosition();
+                    canvas.rotate(shape.getRotation(), pos.x, pos.y);
 
                     shape.draw(canvas);
 
-                    if (xform != null)
-                    {
-                        canvas.restore();
-                    }
+                    canvas.restore();
                 }
             }
         }
+
+        canvas.restore();
     }
 
 
@@ -1171,8 +1201,7 @@ public class ShapeView
         }
         else
         {
-            Set<Shape> shapes = collisionChecker.getObjectsAt(
-                    e.getX(), e.getY(), null);
+            Set<Shape> shapes = getShapesAt(e.getX(), e.getY());
 
             for (Shape shape : shapes)
             {
@@ -1257,9 +1286,10 @@ public class ShapeView
         }
 
 
-        public synchronized void setRunning(boolean value)
+        public synchronized void cancel()
         {
-            running = value;
+            running = false;
+            repaintIfNecessary();
         }
 
 
@@ -1283,11 +1313,68 @@ public class ShapeView
                 try
                 {
                     queue.take();
-                    doRepaint();
+
+                    if (isRunning())
+                    {
+                        doRepaint();
+                    }
                 }
                 catch (InterruptedException e)
                 {
                     // Do nothing.
+                }
+            }
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    private class PhysicsThread extends Thread
+    {
+        private boolean running;
+        private static final int FRAME_RATE = 30;
+
+        public PhysicsThread()
+        {
+            running = true;
+        }
+
+
+        public synchronized void cancel()
+        {
+            running = false;
+        }
+
+
+        public synchronized boolean isRunning()
+        {
+            return running;
+        }
+
+
+        @Override
+        public void run()
+        {
+            while (isRunning())
+            {
+                long startTime = SystemClock.elapsedRealtime();
+
+                int velIters = 3;
+                int posIters = 8;
+
+                synchronized (shapes)
+                {
+                    b2World.step(1f / FRAME_RATE, velIters, posIters);
+                }
+
+                repaint();
+
+                long timeUsed = SystemClock.elapsedRealtime() - startTime;
+                long remainingTime = 1000 / FRAME_RATE - timeUsed;
+
+                if (remainingTime > 0)
+                {
+                    SystemClock.sleep(remainingTime);
                 }
             }
         }
@@ -1311,8 +1398,13 @@ public class ShapeView
         {
             surfaceCreated = true;
 
-            repaintThread.setRunning(true);
-            animationManager.setRunning(true);
+            physicsThread = new PhysicsThread();
+            repaintThread = new RepaintThread();
+            animationManager = new ShapeAnimationManager(ShapeView.this);
+
+            physicsThread.start();
+            repaintThread.start();
+            animationManager.start();
 
             autoRepaint = true;
             repaint();
@@ -1323,8 +1415,15 @@ public class ShapeView
         public void surfaceDestroyed(SurfaceHolder holder)
         {
             surfaceCreated = false;
-            repaintThread.setRunning(false);
-            animationManager.setRunning(false);
+
+            physicsThread.cancel();
+            physicsThread = null;
+
+            repaintThread.cancel();
+            repaintThread = null;
+
+            animationManager.cancel();
+            animationManager = null;
         }
     }
 

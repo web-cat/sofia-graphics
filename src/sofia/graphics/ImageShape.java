@@ -17,9 +17,9 @@ import android.graphics.RectF;
  * @version $Date: 2012/08/04 16:32 $
  */
 public class ImageShape
-	extends Shape
+    extends Shape
 {
-	//~ Fields ................................................................
+    //~ Fields ................................................................
 
     private Image image;
     private Rect sourceBounds;
@@ -35,7 +35,7 @@ public class ImageShape
      */
     public ImageShape()
     {
-    	super();
+        super();
     }
 
 
@@ -44,7 +44,7 @@ public class ImageShape
      * Creates an {@code ImageShape} with the specified bounds and no
      * associated image. The shape will appear blank when it is drawn unless an
      * image is set by calling {@link #setImage(String)} or a similar method.
-     * 
+     *
      * @param bounds the bounds of the shape, which will cause the image to be
      *     stretched or shrunk if necessary to fit
      */
@@ -53,7 +53,7 @@ public class ImageShape
         setBounds(bounds);
     }
 
-    
+
     // ----------------------------------------------------------
     /**
      * Creates an {@code ImageShape} with the specified bounds and no
@@ -71,10 +71,10 @@ public class ImageShape
      */
     public ImageShape(float left, float top, float right, float bottom)
     {
-    	this(new RectF(left, top, right, bottom));
+        this(new RectF(left, top, right, bottom));
     }
-    
-    
+
+
     // ----------------------------------------------------------
     /**
      * Creates an {@code ImageShape} stretched to fit the specified bounds.
@@ -158,9 +158,9 @@ public class ImageShape
      *     will be drawn
      */
     public ImageShape(String imageName, float left, float top, float right,
-    		float bottom)
+            float bottom)
     {
-    	this(imageName, new RectF(left, top, right, bottom));
+        this(imageName, new RectF(left, top, right, bottom));
     }
 
 
@@ -169,7 +169,7 @@ public class ImageShape
     // ----------------------------------------------------------
     /**
      * Gets the image drawn by this shape.
-     * 
+     *
      * @return the {@link Image} drawn by this shape
      */
     public Image getImage()
@@ -181,19 +181,19 @@ public class ImageShape
     // ----------------------------------------------------------
     /**
      * Sets the image drawn by this shape.
-     * 
+     *
      * @param newImage the {@link Image} to be drawn by this shape
      */
     public void setImage(String newImage)
     {
-    	setImage(new Image(newImage));
+        setImage(new Image(newImage));
     }
 
 
     // ----------------------------------------------------------
     /**
      * Sets the image drawn by this shape.
-     * 
+     *
      * @param newImage the {@link Image} to be drawn by this shape
      */
     public void setImage(Image newImage)
@@ -208,7 +208,7 @@ public class ImageShape
     /**
      * A convenience method that sets the image drawn by this shape from an
      * Android {@link Bitmap} object instead of a Sofia {@code Image}.
-     * 
+     *
      * @param newBitmap the {@link Bitmap} to be drawn by this shape
      */
     public void setBitmap(Bitmap newBitmap)
@@ -226,7 +226,7 @@ public class ImageShape
      * </p><p>
      * This method returns null if the entire image is being drawn.
      * </p>
-     * 
+     *
      * @return a {@code Rect} indicating the subset of the image that should be
      *     drawn, or null if the entire image is being drawn
      */
@@ -240,7 +240,7 @@ public class ImageShape
     /**
      * Sets the subset of the image that should be drawn. Notice that these are
      * integer coordinates since they represent pixels in the image.
-     * 
+     *
      * @param newSourceBounds the bounds of the source rectangle indicating the
      *     portion of the image to be drawn, or null to draw the entire image
      */
@@ -260,7 +260,7 @@ public class ImageShape
      * In order to revert this and have the entire image drawn again, call
      * {@link #setSourceBounds(Rect)} and pass it {@code null}.
      * </p>
-     * 
+     *
      * @param left the x-coordinate of the left side of the source rectangle
      * @param top the y-coordinate of the top of the source rectangle
      * @param right the x-coordinate of the right side of the source rectangle
@@ -284,8 +284,8 @@ public class ImageShape
         Bitmap bm = image.asBitmap();
         if (bm != null)
         {
-        	RectF sortedBounds = new RectF(getBounds());
-        	sortedBounds.sort();
+            RectF sortedBounds = new RectF(getBounds());
+            sortedBounds.sort();
             canvas.drawBitmap(bm, sourceBounds, sortedBounds, getPaint());
         }
     }
@@ -295,22 +295,22 @@ public class ImageShape
     @Override
     protected Paint getPaint()
     {
-    	Paint paint = super.getPaint();
+        Paint paint = super.getPaint();
 
-    	Color color = getColor();
-    	
-    	if (color != null)
-    	{
-	    	Color fullColor = color.withAlpha(255);
-	
-	    	paint.setAntiAlias(true);
-	    	paint.setColorFilter(
-	    			new PorterDuffColorFilter(fullColor.toRawColor(),
-	    					PorterDuff.Mode.MULTIPLY));
-	    	paint.setAlpha(color.alpha());
-    	}
+        Color color = getColor();
 
-    	return paint;
+        if (color != null)
+        {
+            Color fullColor = color.withAlpha(255);
+
+            paint.setAntiAlias(true);
+            paint.setColorFilter(
+                    new PorterDuffColorFilter(fullColor.toRawColor(),
+                            PorterDuff.Mode.MULTIPLY));
+            paint.setAlpha(color.alpha());
+        }
+
+        return paint;
     }
 
 
@@ -321,5 +321,13 @@ public class ImageShape
         {
             image.resolveAgainstContext(getParentView().getContext());
         }
+    }
+
+
+    // ----------------------------------------------------------
+    @Override
+    protected void createFixtures()
+    {
+        // TODO Auto-generated method stub
     }
 }

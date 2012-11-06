@@ -1,5 +1,9 @@
 package sofia.graphics;
 
+import org.jbox2d.collision.shapes.PolygonShape;
+import org.jbox2d.common.Vec2;
+import org.jbox2d.dynamics.Body;
+
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -13,24 +17,29 @@ import android.graphics.RectF;
  */
 public class RectangleShape extends FillableShape
 {
-	//~ Constructors ..........................................................
+    //~ Fields ................................................................
+
+    private RectF bounds;
+
+
+    //~ Constructors ..........................................................
 
     // ----------------------------------------------------------
-	/**
-	 * Creates a {@code RectangleShape} with default position and size.
-	 */
-	public RectangleShape()
-	{
-		super();
-	}
+    /**
+     * Creates a {@code RectangleShape} with default position and size.
+     */
+    public RectangleShape()
+    {
+        super();
+    }
 
 
     // ----------------------------------------------------------
-	/**
-	 * Creates a {@code RectangleShape} with the specified bounds.
-	 * 
-	 * @param bounds the bounds of the rectangle
-	 */
+    /**
+     * Creates a {@code RectangleShape} with the specified bounds.
+     *
+     * @param bounds the bounds of the rectangle
+     */
     public RectangleShape(RectF bounds)
     {
         setBounds(bounds);
@@ -40,19 +49,52 @@ public class RectangleShape extends FillableShape
     // ----------------------------------------------------------
     /**
      * Creates a {@code RectangleShape} with the specified bounds.
-     * 
-     * @param x1 the x-coordinate of the top-left corner of the rectangle
-     * @param y1 the y-coordinate of the top-left corner of the rectangle
-     * @param x2 the x-coordinate of the bottom-right corner of the rectangle
-     * @param y2 the y-coordinate of the bottom-right corner of the rectangle
+     *
+     * @param left the x-coordinate of the top-left corner of the rectangle
+     * @param top the y-coordinate of the top-left corner of the rectangle
+     * @param right the x-coordinate of the bottom-right corner of the
+     *     rectangle
+     * @param bottom the y-coordinate of the bottom-right corner of the
+     *     rectangle
      */
-    public RectangleShape(float x1, float y1, float x2, float y2)
+    public RectangleShape(float left, float top, float right, float bottom)
     {
-    	this(new RectF(x1, y1, x2, y2));
+        this(new RectF(left, top, right, bottom));
     }
 
 
     //~ Methods ...............................................................
+
+    // ----------------------------------------------------------
+    public RectF getBounds()
+    {
+        // If the body has been created, update the bounding box using the
+        // body's current position.
+
+        Body b2Body = getB2Body();
+        if (b2Body != null)
+        {
+            float hw = bounds.width() / 2;
+            float hh = bounds.height() / 2;
+            Vec2 center = b2Body.getPosition();
+            bounds.offsetTo(center.x - hw, center.y - hh);
+        }
+
+        return new RectF(bounds);
+    }
+
+
+    // ----------------------------------------------------------
+    public void setBounds(RectF newBounds)
+    {
+        bounds = new RectF(newBounds);
+
+        updateTransform(bounds.centerX(), bounds.centerY());
+
+        recreateFixtures();
+        conditionallyRepaint();
+    }
+
 
     // ----------------------------------------------------------
     @Override
@@ -68,5 +110,17 @@ public class RectangleShape extends FillableShape
 
         Paint paint = getPaint();
         canvas.drawRect(bounds, paint);
+    }
+
+
+    // ----------------------------------------------------------
+    @Override
+    protected void createFixtures()
+    {
+        PolygonShape box = new PolygonShape();
+        box.setAsBox(
+                Math.abs(bounds.width() / 2), Math.abs(bounds.height() / 2));
+
+        addFixtureForShape(box);
     }
 }

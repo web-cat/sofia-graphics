@@ -4,6 +4,9 @@ import sofia.graphics.internal.GeometryUtils;
 import sofia.graphics.internal.ShapeSorter;
 import android.graphics.Matrix;
 import java.util.Collection;
+
+import org.jbox2d.dynamics.Body;
+
 import android.graphics.RectF;
 import android.graphics.Canvas;
 
@@ -40,7 +43,7 @@ public class CompositeShape
      */
     public CompositeShape(RectF bounds)
     {
-        super(bounds);
+        super();
     }
 
 
@@ -88,14 +91,14 @@ public class CompositeShape
     // ----------------------------------------------------------
     public void onShapesAdded(Iterable<? extends Shape> addedShapes)
     {
-    	// TODO
+        // TODO
     }
 
 
     // ----------------------------------------------------------
     public void onShapesRemoved(Iterable<? extends Shape> removedShapes)
     {
-    	// TODO    	
+        // TODO
     }
 
 
@@ -238,5 +241,13 @@ public class CompositeShape
     public boolean isInFrontOf(Shape left, Shape right)
     {
         return getShapeParent().isInFrontOf(left, right);
+    }
+
+
+    // ----------------------------------------------------------
+    @Override
+    protected void createFixtures()
+    {
+        // TODO Auto-generated method stub
     }
 }
