@@ -60,6 +60,8 @@ public class ShapeSet
     // ----------------------------------------------------------
     public boolean add(Shape shape)
     {
+        shape.updateTimeAddedToParent();
+
         boolean result = treeSet.add(shape);
         parent.onShapesAdded(Collections.singleton(shape));
         return result;
@@ -69,6 +71,11 @@ public class ShapeSet
     // ----------------------------------------------------------
     public boolean addAll(Collection<? extends Shape> collection)
     {
+        for (Shape shape : collection)
+        {
+            shape.updateTimeAddedToParent();
+        }
+
         boolean result = treeSet.addAll(collection);
         parent.onShapesAdded(collection);
         return result;

@@ -640,6 +640,19 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
+     * Sets the time that this shape was last added to its parent. Used
+     * internally to sort shapes when they have equal z-indices.
+     *
+     * @return the time that this shape was last added to its parent
+     */
+    /*package*/ final void updateTimeAddedToParent()
+    {
+        timeAddedToParent = ADD_TO_PARENT_COUNTER++;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
      * Gets the time that this shape was last added to its parent. Used
      * internally to sort shapes when they have equal z-indices.
      *
@@ -709,7 +722,6 @@ public abstract class Shape
     /*package*/ final void setParent(ShapeParent newParent)
     {
         this.parent = newParent;
-        timeAddedToParent = (newParent != null) ? ADD_TO_PARENT_COUNTER++ : 0;
     }
 
 
