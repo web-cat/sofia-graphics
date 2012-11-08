@@ -3,6 +3,7 @@ package sofia.app;
 import java.util.Set;
 
 import android.graphics.PointF;
+import android.view.View;
 import sofia.graphics.Color;
 import sofia.graphics.Shape;
 import sofia.graphics.ShapeManipulating;
@@ -46,27 +47,39 @@ public abstract class ShapeScreen
     @Override
     protected void afterLayoutInflated(boolean inflated)
     {
-    	boolean hasShapeView = false;
-    	
-    	if (inflated)
-    	{
-        	int shapeViewId = getResources().getIdentifier(
-        			"shapeView", "id", getPackageName());
+        if (inflated)
+        {
+            boolean hasShapeView = false;
 
-        	if (shapeViewId != 0)
-        	{
-        		shapeView = (ShapeView) findViewById(shapeViewId);
-        		hasShapeView = true;
-        	}
-    	}
+            int shapeViewId = getResources().getIdentifier(
+                    "shapeView", "id", getPackageName());
 
-    	if (!hasShapeView)
-    	{
-    		shapeView = createShapeView(this);
-    		setContentView(shapeView);
-        
-    		shapeView.requestFocus();
-    	}
+            if (shapeViewId != 0)
+            {
+                View view = findViewById(shapeViewId);
+
+                if (view instanceof ShapeView)
+                {
+                    shapeView = (ShapeView) findViewById(shapeViewId);
+                    hasShapeView = true;
+                }
+            }
+
+            if (!hasShapeView)
+            {
+                throw new IllegalStateException("A ShapeScreen that uses a "
+                        + "custom layout must contain an "
+                        + "android.graphics.ShapeView with the ID "
+                        + "\"shapeView\".");
+            }
+        }
+        else
+        {
+            shapeView = createShapeView(this);
+            setContentView(shapeView);
+
+            shapeView.requestFocus();
+        }
     }
 
 
@@ -81,7 +94,7 @@ public abstract class ShapeScreen
      */
     protected ShapeView createShapeView(ShapeScreen parent)
     {
-   		return new ShapeView(parent);
+           return new ShapeView(parent);
     }
 
 
@@ -160,15 +173,15 @@ public abstract class ShapeScreen
     {
         shapeView.remove(shape);
     }
-    
-    
+
+
     // ----------------------------------------------------------
     /**
      * Removes all shapes currently on the screen.
      */
     public void clear()
     {
-    	shapeView.clear();
+        shapeView.clear();
     }
 
 
@@ -198,85 +211,85 @@ public abstract class ShapeScreen
      * provide your own layout where the ShapeView only occupies a portion of
      * the screen, this method will only affect the ShapeView portion and not
      * the entire screen.
-     * 
+     *
      * @param color the desired background color
      */
     public void setBackgroundColor(Color color)
     {
-    	shapeView.setBackgroundColor(color);
+        shapeView.setBackgroundColor(color);
     }
 
 
-	// ----------------------------------------------------------
-	public Set<Shape> getShapes()
-	{
-		return shapeView.getShapes();
-	}
+    // ----------------------------------------------------------
+    public Set<Shape> getShapes()
+    {
+        return shapeView.getShapes();
+    }
 
 
-	// ----------------------------------------------------------
-	public <MyShape extends Shape> Set<MyShape> getShapes(Class<MyShape> cls)
-	{
-		return shapeView.getShapes(cls);
-	}
+    // ----------------------------------------------------------
+    public <MyShape extends Shape> Set<MyShape> getShapes(Class<MyShape> cls)
+    {
+        return shapeView.getShapes(cls);
+    }
 
 
-	// ----------------------------------------------------------
-	public Shape getShapeAt(float x, float y)
-	{
-		return shapeView.getShapeAt(x, y);
-	}
+    // ----------------------------------------------------------
+    public Shape getShapeAt(float x, float y)
+    {
+        return shapeView.getShapeAt(x, y);
+    }
 
 
-	// ----------------------------------------------------------
-	public <MyShape extends Shape> MyShape getShapeAt(float x, float y,
-			Class<MyShape> cls)
-	{
-		return shapeView.getShapeAt(x, y, cls);
-	}
+    // ----------------------------------------------------------
+    public <MyShape extends Shape> MyShape getShapeAt(float x, float y,
+            Class<MyShape> cls)
+    {
+        return shapeView.getShapeAt(x, y, cls);
+    }
 
 
-	// ----------------------------------------------------------
-	public Shape getShapeAt(PointF point)
-	{
-		return shapeView.getShapeAt(point);
-	}
+    // ----------------------------------------------------------
+    public Shape getShapeAt(PointF point)
+    {
+        return shapeView.getShapeAt(point);
+    }
 
 
-	// ----------------------------------------------------------
-	public <MyShape extends Shape> MyShape getShapeAt(PointF point,
-			Class<MyShape> cls)
-	{
-		return shapeView.getShapeAt(point, cls);
-	}
+    // ----------------------------------------------------------
+    public <MyShape extends Shape> MyShape getShapeAt(PointF point,
+            Class<MyShape> cls)
+    {
+        return shapeView.getShapeAt(point, cls);
+    }
 
 
-	// ----------------------------------------------------------
-	public Set<Shape> getShapesAt(float x, float y)
-	{
-		return shapeView.getShapesAt(x, y);
-	}
+    // ----------------------------------------------------------
+    public Set<Shape> getShapesAt(float x, float y)
+    {
+        return shapeView.getShapesAt(x, y);
+    }
 
 
-	// ----------------------------------------------------------
-	public <MyShape extends Shape> Set<MyShape> getShapesAt(float x, float y,
-			Class<MyShape> cls)
-	{
-		return shapeView.getShapesAt(x, y, cls);
-	}
+    // ----------------------------------------------------------
+    public <MyShape extends Shape> Set<MyShape> getShapesAt(float x, float y,
+            Class<MyShape> cls)
+    {
+        return shapeView.getShapesAt(x, y, cls);
+    }
 
 
-	// ----------------------------------------------------------
-	public Set<Shape> getShapesAt(PointF point)
-	{
-		return shapeView.getShapesAt(point);
-	}
+    // ----------------------------------------------------------
+    public Set<Shape> getShapesAt(PointF point)
+    {
+        return shapeView.getShapesAt(point);
+    }
 
 
-	// ----------------------------------------------------------
-	public <MyShape extends Shape> Set<MyShape> getShapesAt(PointF point,
-			Class<MyShape> cls)
-	{
-		return shapeView.getShapesAt(point, cls);
-	}
+    // ----------------------------------------------------------
+    public <MyShape extends Shape> Set<MyShape> getShapesAt(PointF point,
+            Class<MyShape> cls)
+    {
+        return shapeView.getShapesAt(point, cls);
+    }
 }
