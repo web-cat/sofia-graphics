@@ -47,7 +47,7 @@ public abstract class FillableShape extends StrokedShape
     /**
      * Gets a value indicating whether the shape will be filled when it is
      * drawn.
-     * 
+     *
      * @return true if the shape will be filled when it is drawn, or false if
      *     it will be drawn as an outline
      */
@@ -78,7 +78,7 @@ public abstract class FillableShape extends StrokedShape
      * by calling {@link #setFillColor(Color)}; if it has not been set, then
      * the shape's color as defined by {@link #getColor()} will be used to fill
      * the shape.
-     * 
+     *
      * @return the {@link Color} used to fill the shape
      */
     public Color getFillColor()
@@ -99,7 +99,7 @@ public abstract class FillableShape extends StrokedShape
      * Sets the color used to fill the shape. If it has not been set, then the
      * shape's color as defined by {@link #getColor()} will be used to fill the
      * shape.
-     * 
+     *
      * @param newFillColor the {@link Color} to use to fill the shape
      */
     public void setFillColor(Color newFillColor)
@@ -112,6 +112,50 @@ public abstract class FillableShape extends StrokedShape
 
     // ----------------------------------------------------------
     /**
+     * <p>
+     * A convenience method that gets the alpha (opacity) component of the
+     * shape's color.
+     * </p><p>
+     * Note that calling the {@link #setAlpha(int)} method will update the
+     * alpha components of both the color and the fill color of the shape, so
+     * this method would return the single alpha value in that case. In the
+     * event that the shape's color and fill color have been set explicitly to
+     * have different alpha components, this method returns the alpha component
+     * of the color returned by {@link #getColor()}.
+     * </p>
+     *
+     * @return The alpha component of the shape's color, where 0 means that
+     *         the color is fully transparent and 255 means that it is fully
+     *         opaque.
+     */
+    @Override
+    public int getAlpha()
+    {
+        // No behavioral change; only overridden to provide updated Javadoc.
+        return super.getAlpha();
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * A convenience method that sets the alpha (opacity) component of the
+     * shape's color and fill color without changing the other color
+     * components.
+     *
+     * @param newAlpha The new alpha component of the shape's color, where 0
+     *                 means that the color is fully transparent and 255
+     *                 means that it is fully opaque.
+     */
+    @Override
+    public void setAlpha(int newAlpha)
+    {
+        super.setAlpha(newAlpha);
+        setFillColor(getFillColor().withAlpha(newAlpha));
+    }
+
+
+    // ----------------------------------------------------------
+    /**
      * Gets a {@link Paint} used to fill the shape. Android's drawing
      * primitives in the {@code Canvas} class do not support having separate
      * stroke and fill colors in a single drawing operation, so subclasses of
@@ -119,7 +163,7 @@ public abstract class FillableShape extends StrokedShape
      * fill, using the {@code Paint} returned by this method, and then again
      * for the outline, using the {@code Paint} returned by
      * {@link #getPaint()}.
-     * 
+     *
      * @return the {@code Paint} used to fill the shape when it is drawn
      */
     protected Paint getFillPaint()
@@ -138,17 +182,17 @@ public abstract class FillableShape extends StrokedShape
      * Provides animation support for shapes. Most uses of this class will not
      * need to reference it directly; for example, an animation can be
      * constructed and played by chaining method calls directly:
-     * 
+     *
      * <pre>
      *     shape.animate(500).color(Color.blue).alpha(128).play();</pre>
-     * 
+     *
      * In situations where the type of the class must be referenced directly
      * (for example, when one is passed to an event handler like
      * {@code onAnimationDone}), referring to the name of that type can be
      * somewhat awkward due to the use of some Java generics tricks to ensure
      * that the methods chain properly. In nearly all cases, it is reasonable
      * to use a "?" wildcard in place of the generic parameter:
-     * 
+     *
      * <pre>
      *     Shape.Animator&lt;?&gt; anim = shape.animate(500).color(Color.blue);
      *     anim.play();</pre>
@@ -159,11 +203,11 @@ public abstract class FillableShape extends StrokedShape
      * @version 2011.12.11
      */
     public class Animator<
-	    AnimatorType extends FillableShape.Animator<AnimatorType>>
-	    extends StrokedShape.Animator<AnimatorType>
-	{
-	    //~ Constructors ......................................................
-	
+        AnimatorType extends FillableShape.Animator<AnimatorType>>
+        extends StrokedShape.Animator<AnimatorType>
+    {
+        //~ Constructors ......................................................
+
         // ----------------------------------------------------------
         /**
          * Creates a new animator for the specified shape. Users cannot call
@@ -174,28 +218,28 @@ public abstract class FillableShape extends StrokedShape
          * @param duration the length of one pass of the animation, in
          *     milliseconds
          */
-	    protected Animator(long duration)
-	    {
-	        super(duration);
-	    }
-	
-	
-	    //~ Methods ...........................................................
-	
-	    // ----------------------------------------------------------
+        protected Animator(long duration)
+        {
+            super(duration);
+        }
+
+
+        //~ Methods ...........................................................
+
+        // ----------------------------------------------------------
         /**
          * Gets the shape that the receiver is animating.
-         * 
+         *
          * @return the shape that the receiver is animating
          */
-	    @Override
-	    public FillableShape getShape()
-	    {
-	    	return FillableShape.this;
-	    }
+        @Override
+        public FillableShape getShape()
+        {
+            return FillableShape.this;
+        }
 
 
-	    // ----------------------------------------------------------
+        // ----------------------------------------------------------
         /**
          * Sets the final fill color of the shape when the animation ends.
          *
@@ -203,11 +247,11 @@ public abstract class FillableShape extends StrokedShape
          *     animation ends
          * @return this animator, for method chaining
          */
-	    @SuppressWarnings("unchecked")
-	    public AnimatorType fillColor(Color fillColor)
-	    {
-	        addTransformer(new FillColorTransformer(getShape(), fillColor));
-	        return (AnimatorType) this;
-	    }
-	}
+        @SuppressWarnings("unchecked")
+        public AnimatorType fillColor(Color fillColor)
+        {
+            addTransformer(new FillColorTransformer(getShape(), fillColor));
+            return (AnimatorType) this;
+        }
+    }
 }
