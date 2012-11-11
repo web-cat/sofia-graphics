@@ -105,7 +105,12 @@ public abstract class Shape
     // ----------------------------------------------------------
     /*package*/ void destroyB2Body(World b2World)
     {
-        // TODO preserve data from b2body in b2bodydef
+        // Preserve in the BodyDef any properties of the Body that change on
+        // their own through the simulation.
+
+        b2BodyDef.angle = b2Body.getAngle();
+        b2BodyDef.position = b2Body.getPosition();
+
         b2World.destroyBody(b2Body);
         b2Body = null;
     }
@@ -206,13 +211,11 @@ public abstract class Shape
      */
     public void setActive(boolean isActive)
     {
+        b2BodyDef.active = isActive;
+
         if (b2Body != null)
         {
             b2Body.setActive(isActive);
-        }
-        else
-        {
-            b2BodyDef.active = isActive;
         }
     }
 
@@ -343,13 +346,11 @@ public abstract class Shape
      */
     public void setBullet(boolean bullet)
     {
+        b2BodyDef.bullet = bullet;
+
         if (b2Body != null)
         {
             b2Body.setBullet(true);
-        }
-        else
-        {
-            b2BodyDef.bullet = bullet;
         }
     }
 
@@ -394,13 +395,11 @@ public abstract class Shape
     {
         float radsPerSec = (float) Math.toRadians(newVelocity);
 
+        b2BodyDef.angularVelocity = radsPerSec;
+
         if (b2Body != null)
         {
             b2Body.setAngularVelocity(radsPerSec);
-        }
-        else
-        {
-            b2BodyDef.angularVelocity = radsPerSec;
         }
     }
 
@@ -442,13 +441,11 @@ public abstract class Shape
     {
         Vec2 vec = Box2DUtils.pointFToVec2(newVelocity);
 
+        b2BodyDef.linearVelocity = vec;
+
         if (b2Body != null)
         {
             b2Body.setLinearVelocity(vec);
-        }
-        else
-        {
-            b2BodyDef.linearVelocity = vec;
         }
     }
 
@@ -582,12 +579,10 @@ public abstract class Shape
     {
         Vec2 position = new Vec2(x, y);
 
-        if (b2Body == null)
-        {
-            b2BodyDef.position = position;
-            b2BodyDef.angle = angle;
-        }
-        else
+        b2BodyDef.position = position;
+        b2BodyDef.angle = angle;
+
+        if (b2Body != null)
         {
             b2Body.setTransform(position, angle);
         }
