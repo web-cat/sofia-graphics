@@ -30,7 +30,7 @@ public class RectangleShape extends FillableShape
      */
     public RectangleShape()
     {
-        super();
+        this(new RectF(0, 0, 0, 0));
     }
 
 
@@ -66,6 +66,7 @@ public class RectangleShape extends FillableShape
     //~ Methods ...............................................................
 
     // ----------------------------------------------------------
+    @Override
     public RectF getBounds()
     {
         // If the body has been created, update the bounding box using the
@@ -85,6 +86,7 @@ public class RectangleShape extends FillableShape
 
 
     // ----------------------------------------------------------
+    @Override
     public void setBounds(RectF newBounds)
     {
         bounds = new RectF(newBounds);
