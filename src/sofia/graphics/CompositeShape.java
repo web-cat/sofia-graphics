@@ -1,14 +1,12 @@
 package sofia.graphics;
 
-import sofia.graphics.internal.GeometryUtils;
-import sofia.graphics.internal.ShapeSorter;
-import android.graphics.Matrix;
 import java.util.Collection;
 
-import org.jbox2d.dynamics.Body;
-
-import android.graphics.RectF;
+import sofia.graphics.internal.GeometryUtils;
+import sofia.graphics.internal.ShapeSorter;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.graphics.RectF;
 
 //-------------------------------------------------------------------------
 /**
@@ -22,7 +20,7 @@ public class CompositeShape
     extends Shape
     implements ShapeParent, ShapeManipulating
 {
-    private ShapeSet shapes = new ShapeSet(this);
+    private ShapeSet<Shape> shapes = new ShapeSet<Shape>(this);
     private boolean needsLayout = true;
 
 

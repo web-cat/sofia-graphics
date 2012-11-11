@@ -17,14 +17,14 @@ import sofia.internal.Reversed;
  * @author  Last changed by $Author$
  * @version $Revision$, $Date$
  */
-public class ShapeSet
-    implements Set<Shape>
+public class ShapeSet<ShapeType extends Shape>
+    implements Set<ShapeType>
 {
     //~ Fields ................................................................
 
-    private ShapeParent      parent;
-    private TreeSet<Shape>   treeSet;
-    private ZIndexComparator zorder;
+    private ShapeParent        parent;
+    private TreeSet<ShapeType> treeSet;
+    private ZIndexComparator   zorder;
 
 
     //~ Constructors ..........................................................
@@ -51,14 +51,14 @@ public class ShapeSet
         this.parent = parent;
 
         zorder  = new ZIndexComparator();
-        treeSet = new TreeSet<Shape>(zorder);
+        treeSet = new TreeSet<ShapeType>(zorder);
     }
 
 
     //~ Methods ...............................................................
 
     // ----------------------------------------------------------
-    public synchronized boolean add(Shape shape)
+    public synchronized boolean add(ShapeType shape)
     {
         shape.updateTimeAddedToParent();
 
@@ -69,7 +69,8 @@ public class ShapeSet
 
 
     // ----------------------------------------------------------
-    public synchronized boolean addAll(Collection<? extends Shape> collection)
+    public synchronized boolean addAll(
+            Collection<? extends ShapeType> collection)
     {
         for (Shape shape : collection)
         {
@@ -85,8 +86,8 @@ public class ShapeSet
     // ----------------------------------------------------------
     public synchronized void clear()
     {
-        TreeSet<Shape> oldTreeSet = treeSet;
-        treeSet = new TreeSet<Shape>(zorder);
+        TreeSet<ShapeType> oldTreeSet = treeSet;
+        treeSet = new TreeSet<ShapeType>(zorder);
         sendOnShapesRemoved(oldTreeSet);
     }
 
@@ -113,7 +114,7 @@ public class ShapeSet
 
 
     // ----------------------------------------------------------
-    public Iterator<Shape> iterator()
+    public Iterator<ShapeType> iterator()
     {
         return new WrappingIterator(treeSet.iterator(), true);
     }
@@ -125,9 +126,10 @@ public class ShapeSet
      * "back" (bottom) in terms of drawing order.
      * @return An iterator representing this traversal order.
      */
-    public synchronized Iterator<Shape> frontToBackIterator()
+    public synchronized Iterator<ShapeType> frontToBackIterator()
     {
-        Shape[] array = new Shape[size()];
+        @SuppressWarnings("unchecked")
+        ShapeType[] array = (ShapeType[]) new Shape[size()];
         treeSet.toArray(array);
 
         return new WrappingIterator(Reversed.reversed(array).iterator(), true);
@@ -153,11 +155,11 @@ public class ShapeSet
     {
         boolean modified = false;
 
-        Iterator<Shape> it = iterator();
-        TreeSet<Shape> removedShapes = new TreeSet<Shape>(zorder);
+        Iterator<ShapeType> it = iterator();
+        TreeSet<ShapeType> removedShapes = new TreeSet<ShapeType>(zorder);
         while (it.hasNext())
         {
-            Shape shape = it.next();
+            ShapeType shape = it.next();
 
             if (collection.contains(shape))
             {
@@ -184,11 +186,11 @@ public class ShapeSet
     {
         boolean modified = false;
 
-        Iterator<Shape> it = iterator();
-        TreeSet<Shape> removedShapes = new TreeSet<Shape>(zorder);
+        Iterator<ShapeType> it = iterator();
+        TreeSet<ShapeType> removedShapes = new TreeSet<ShapeType>(zorder);
         while (it.hasNext())
         {
-            Shape shape = it.next();
+            ShapeType shape = it.next();
 
             if (!collection.contains(shape))
             {
@@ -261,7 +263,7 @@ public class ShapeSet
      */
     public synchronized void setDrawingOrder(ZIndexComparator order)
     {
-        TreeSet<Shape> newSet = new TreeSet<Shape>(order);
+        TreeSet<ShapeType> newSet = new TreeSet<ShapeType>(order);
         newSet.addAll(treeSet);
         zorder = order;
         treeSet = newSet;
@@ -269,7 +271,7 @@ public class ShapeSet
 
 
     // ----------------------------------------------------------
-    private void sendOnShapesAdded(Iterable<? extends Shape> shapesAdded)
+    private void sendOnShapesAdded(Iterable<? extends ShapeType> shapesAdded)
     {
         if (parent != null)
         {
@@ -291,15 +293,16 @@ public class ShapeSet
     //~ Inner classes .........................................................
 
     // ----------------------------------------------------------
-    private class WrappingIterator implements Iterator<Shape>
+    private class WrappingIterator implements Iterator<ShapeType>
     {
-        private Iterator<Shape> iterator;
+        private Iterator<ShapeType> iterator;
         private boolean notifyParent;
-        private Shape lastShape;
+        private ShapeType lastShape;
 
 
         // ----------------------------------------------------------
-        public WrappingIterator(Iterator<Shape> iterator, boolean notifyParent)
+        public WrappingIterator(
+                Iterator<ShapeType> iterator, boolean notifyParent)
         {
             this.iterator = iterator;
             this.notifyParent = notifyParent;
@@ -317,7 +320,7 @@ public class ShapeSet
 
 
         // ----------------------------------------------------------
-        public Shape next()
+        public ShapeType next()
         {
             synchronized (ShapeSet.this)
             {
