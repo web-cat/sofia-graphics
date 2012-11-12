@@ -1,7 +1,12 @@
 package sofia.graphics;
 
+import org.jbox2d.collision.shapes.PolygonShape;
+import org.jbox2d.common.Vec2;
+import org.jbox2d.dynamics.Body;
+
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -21,6 +26,8 @@ public class ImageShape
 {
     //~ Fields ................................................................
 
+    private RectF bounds;
+
     private Image image;
     private Rect sourceBounds;
 
@@ -35,7 +42,7 @@ public class ImageShape
      */
     public ImageShape()
     {
-        super();
+        this(new RectF(0, 0, 0, 0));
     }
 
 
@@ -102,8 +109,7 @@ public class ImageShape
      */
     public ImageShape(Bitmap bitmap, RectF bounds)
     {
-        image = new Image(bitmap);
-        setBounds(bounds);
+        this(new Image(bitmap), bounds);
     }
 
 
@@ -119,8 +125,7 @@ public class ImageShape
      */
     public ImageShape(int bitmapId, RectF bounds)
     {
-        image = new Image(bitmapId);
-        setBounds(bounds);
+        this(new Image(bitmapId), bounds);
     }
 
 
@@ -136,8 +141,7 @@ public class ImageShape
      */
     public ImageShape(String imageName, RectF bounds)
     {
-        image = new Image(imageName);
-        setBounds(bounds);
+        this(new Image(imageName), bounds);
     }
 
 
@@ -276,6 +280,39 @@ public class ImageShape
 
     // ----------------------------------------------------------
     @Override
+    public RectF getBounds()
+    {
+        // If the body has been created, update the bounding box using the
+        // body's current position.
+
+        Body b2Body = getB2Body();
+        if (b2Body != null)
+        {
+            float hw = bounds.width() / 2;
+            float hh = bounds.height() / 2;
+            Vec2 center = b2Body.getPosition();
+            bounds.offsetTo(center.x - hw, center.y - hh);
+        }
+
+        return new RectF(bounds);
+    }
+
+
+    // ----------------------------------------------------------
+    @Override
+    public void setBounds(RectF newBounds)
+    {
+        bounds = new RectF(newBounds);
+
+        updateTransform(bounds.centerX(), bounds.centerY());
+
+        recreateFixtures();
+        conditionallyRepaint();
+    }
+
+
+    // ----------------------------------------------------------
+    @Override
     public void draw(Canvas canvas)
     {
         loadBitmapIfNecessary();
@@ -286,7 +323,33 @@ public class ImageShape
         {
             RectF sortedBounds = new RectF(getBounds());
             sortedBounds.sort();
+
+            // If the coordinate system is flipped in either direction, we need
+            // to do another temporary flip to ensure that the images are drawn
+            // in their native orientation.
+
+            CoordinateSystem cs = getParentView().getCoordinateSystem();
+            boolean flipX = cs.isFlippedX();
+            boolean flipY = cs.isFlippedY();
+
+            if (flipX || flipY)
+            {
+                canvas.save();
+
+                Matrix matrix = new Matrix();
+                matrix.setScale(flipX ? -1 : 1, flipY ? -1 : 1);
+                matrix.postTranslate(
+                        flipX ? sortedBounds.left + sortedBounds.right : 0,
+                        flipY ? sortedBounds.top + sortedBounds.bottom : 0);
+                canvas.concat(matrix);
+            }
+
             canvas.drawBitmap(bm, sourceBounds, sortedBounds, getPaint());
+
+            if (flipX || flipY)
+            {
+                canvas.restore();
+            }
         }
     }
 
@@ -328,6 +391,10 @@ public class ImageShape
     @Override
     protected void createFixtures()
     {
-        // TODO Auto-generated method stub
+        PolygonShape box = new PolygonShape();
+        box.setAsBox(
+                Math.abs(bounds.width() / 2), Math.abs(bounds.height() / 2));
+
+        addFixtureForShape(box);
     }
 }
