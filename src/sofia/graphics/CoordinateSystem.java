@@ -119,6 +119,13 @@ public class CoordinateSystem
 
 
     // ----------------------------------------------------------
+    /**
+     * Gets a value indicating whether the x-axis of this coordinate system is
+     * flipped (that is, higher values of x are to the left lower values).
+     *
+     * @return true if the coordinate system's x-axis is flipped, otherwise
+     *     false
+     */
     public boolean isFlippedX()
     {
         return flipX;
@@ -141,6 +148,13 @@ public class CoordinateSystem
 
 
     // ----------------------------------------------------------
+    /**
+     * Gets a value indicating whether the y-axis of this coordinate system is
+     * flipped (that is, higher values of y are above lower values).
+     *
+     * @return true if the coordinate system's y-axis is flipped, otherwise
+     *     false
+     */
     public boolean isFlippedY()
     {
         return flipY;
@@ -190,6 +204,50 @@ public class CoordinateSystem
         owner.repaint();
 
         return this;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Transforms a point from device coordinates (pixels on the view/screen)
+     * to local coordinates.
+     *
+     * @param x the x-coordinate
+     * @param y the y-coordinate
+     * @return the local coordinates in this coordinate system corresponding to
+     *     the specified device coordinates
+     */
+    public PointF deviceToLocal(float x, float y)
+    {
+        if (matrix != null)
+        {
+            float[] ptArray = { x, y };
+
+            Matrix inverse = new Matrix();
+            matrix.invert(inverse);
+            inverse.mapPoints(ptArray);
+
+            return new PointF(ptArray[0], ptArray[1]);
+        }
+        else
+        {
+            return new PointF(x, y);
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Transforms a point from device coordinates (pixels on the view/screen)
+     * to local coordinates.
+     *
+     * @param pt the device coordinates to transform
+     * @return the local coordinates in this coordinate system corresponding to
+     *     the specified device coordinates
+     */
+    public PointF deviceToLocal(PointF pt)
+    {
+        return deviceToLocal(pt.x, pt.y);
     }
 
 
@@ -264,30 +322,5 @@ public class CoordinateSystem
         {
             canvas.concat(matrix);
         }
-    }
-
-
-    public PointF inverseTransform(float x, float y)
-    {
-        if (matrix != null)
-        {
-            float[] ptArray = { x, y };
-
-            Matrix inverse = new Matrix();
-            matrix.invert(inverse);
-            inverse.mapPoints(ptArray);
-
-            return new PointF(ptArray[0], ptArray[1]);
-        }
-        else
-        {
-            return new PointF(x, y);
-        }
-    }
-
-
-    public PointF inverseTransform(PointF pt)
-    {
-        return inverseTransform(pt.x, pt.y);
     }
 }

@@ -1453,7 +1453,7 @@ public class ShapeView
                     protected Object[] transform(Object... args)
                     {
                         MotionEvent e = (MotionEvent) args[0];
-                        PointF pt = coordinateSystem.inverseTransform(
+                        PointF pt = coordinateSystem.deviceToLocal(
                                 e.getX(), e.getY());
                         return new Object[] { pt.x, pt.y };
                     }
