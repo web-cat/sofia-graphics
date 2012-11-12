@@ -119,6 +119,13 @@ public class CoordinateSystem
 
 
     // ----------------------------------------------------------
+    public boolean isFlippedX()
+    {
+        return flipX;
+    }
+
+
+    // ----------------------------------------------------------
     /**
      * Flips the y-axis of the coordinate system so that it higher values on
      * the y-axis are above lower values.
@@ -130,6 +137,13 @@ public class CoordinateSystem
         flipY = true;
 
         return this;
+    }
+
+
+    // ----------------------------------------------------------
+    public boolean isFlippedY()
+    {
+        return flipY;
     }
 
 
