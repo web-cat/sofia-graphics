@@ -222,6 +222,44 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
+     * Gets the gravity scaling factory for this shape.
+     *
+     * @return the gravity scaling factor for the shape
+     */
+    public float getGravityScale()
+    {
+        if (b2Body != null)
+        {
+            return b2Body.getGravityScale();
+        }
+        else
+        {
+            return b2BodyDef.gravityScale;
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the gravity scaling factor for the shape. This can be used to
+     * create interesting gravitational effects for individual shapes; for
+     * example, setting it to 0.0 would cause the shape to float in mid-air.
+     *
+     * @param gravityScale the desired gravity scaling factor for the shape
+     */
+    public void setGravityScale(float gravityScale)
+    {
+        b2BodyDef.gravityScale = gravityScale;
+
+        if (b2Body != null)
+        {
+            b2Body.setGravityScale(gravityScale);
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
      * Gets the coefficient of restitution, which controls the "bounciness" of
      * the shape.
      *
