@@ -387,7 +387,7 @@ public class ShapeView
         }
         else
         {
-            return shapes.iterator().next();
+            return shapes.frontToBackIterator().next();
         }
     }
 

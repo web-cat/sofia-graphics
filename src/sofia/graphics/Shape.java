@@ -70,6 +70,7 @@ public abstract class Shape
     private float restitution;
     private float density;
     private float friction;
+    private boolean sensor;
 
 
     //~ Constructors ..........................................................
@@ -217,6 +218,35 @@ public abstract class Shape
         {
             b2Body.setActive(isActive);
         }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets a value indicating whether or not the shape is a sensor. Sensors
+     * are shapes that can be used to detect collisions, but they do not
+     * respond physically to those collisions.
+     *
+     * @return true if the shape is a sensor; false if it is not
+     */
+    public boolean isSensor()
+    {
+        return sensor;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets a value indicating whether or not the shape is a sensor. Sensors
+     * are shapes that can be used to detect collisions, but they do not
+     * respond physically to those collisions.
+     *
+     * @param isSensor true if the shape is a sensor; false if it is not
+     */
+    public void setSensor(boolean isSensor)
+    {
+        sensor = isSensor;
+        recreateFixtures();
     }
 
 
@@ -645,6 +675,7 @@ public abstract class Shape
         fd.friction = friction;
         fd.density = density;
         fd.shape = b2Shape;
+        fd.isSensor = sensor;
         fd.userData = this;
 
         b2Fixtures.add(b2Body.createFixture(fd));
