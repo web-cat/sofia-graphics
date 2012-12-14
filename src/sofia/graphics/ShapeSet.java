@@ -268,6 +268,15 @@ public class ShapeSet
     }
 
 
+    // ----------------------------------------------------------
+    /*package*/ void updateZIndex(Shape shape, int newZIndex)
+    {
+        treeSet.remove(shape);
+        shape.rawSetZIndex(newZIndex);
+        treeSet.add(shape);
+    }
+
+
     //~ Inner classes .........................................................
 
     // ----------------------------------------------------------

@@ -628,10 +628,14 @@ public class ShapeView
 
 
     // ----------------------------------------------------------
-    public void onZIndexChanged(Shape shape)
+    public void updateZIndex(Shape shape, int newZIndex)
     {
-        remove(shape);
-        add(shape);
+        // FIXME This won't work because the z-index has been changed already,
+        // breaking the partial order of the set!
+
+        shapes.updateZIndex(shape, newZIndex);
+//        remove(shape);
+//        add(shape);
     }
 
 

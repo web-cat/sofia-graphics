@@ -88,14 +88,14 @@ public class CompositeShape
     // ----------------------------------------------------------
     public void onShapesAdded(Iterable<? extends Shape> addedShapes)
     {
-    	// TODO
+        // TODO
     }
 
 
     // ----------------------------------------------------------
     public void onShapesRemoved(Iterable<? extends Shape> removedShapes)
     {
-    	// TODO    	
+        // TODO
     }
 
 
@@ -180,11 +180,12 @@ public class CompositeShape
 
 
     // ----------------------------------------------------------
-    public void onZIndexChanged(Shape shape)
+    public void updateZIndex(Shape shape, int newZIndex)
     {
         // TODO relative z-index
-        remove(shape);
-        add(shape);
+        // FIXME
+        //remove(shape);
+        //add(shape);
     }
 
 

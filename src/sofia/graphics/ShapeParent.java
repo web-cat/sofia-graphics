@@ -17,22 +17,22 @@ public interface ShapeParent
     //~ Methods ...............................................................
 
     // ----------------------------------------------------------
-	void add(Shape shape);
-	
-	
-    // ----------------------------------------------------------
-	void remove(Shape shape);
-	
-	
-    // ----------------------------------------------------------
-	void onShapesAdded(Iterable<? extends Shape> shapes);
-
-	
-    // ----------------------------------------------------------
-	void onShapesRemoved(Iterable<? extends Shape> shapes);
+    void add(Shape shape);
 
 
-	// ----------------------------------------------------------
+    // ----------------------------------------------------------
+    void remove(Shape shape);
+
+
+    // ----------------------------------------------------------
+    void onShapesAdded(Iterable<? extends Shape> shapes);
+
+
+    // ----------------------------------------------------------
+    void onShapesRemoved(Iterable<? extends Shape> shapes);
+
+
+    // ----------------------------------------------------------
     /**
      * Gets the collection of shapes owned by the receiver.
      *
@@ -108,7 +108,7 @@ public interface ShapeParent
      *
      * @param shape the shape whose z-index was changed
      */
-    void onZIndexChanged(Shape shape);
+    void updateZIndex(Shape shape, int newZIndex);
 
 
     // ----------------------------------------------------------

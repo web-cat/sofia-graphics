@@ -629,12 +629,20 @@ public abstract class Shape
      */
     public void setZIndex(int newZIndex)
     {
-        zIndex = newZIndex;
-
         if (parent != null)
         {
-            parent.onZIndexChanged(this);
+            parent.updateZIndex(this, newZIndex);
         }
+        else
+        {
+            rawSetZIndex(newZIndex);
+        }
+    }
+
+
+    /*package*/ void rawSetZIndex(int newZIndex)
+    {
+        zIndex = newZIndex;
     }
 
 
