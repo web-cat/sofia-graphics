@@ -15,8 +15,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class ShapeAnimationManager
 {
-	public static final String TESTING_MODE_PROPERTY =
-			"sofia.graphics.testingMode";
+    public static final String TESTING_MODE_PROPERTY =
+            "sofia.graphics.testingMode";
 
     private ShapeView view;
     private boolean running;
@@ -40,9 +40,14 @@ public class ShapeAnimationManager
 
 
     // ----------------------------------------------------------
-    public synchronized void setRunning(boolean value)
+    public synchronized void cancel()
     {
-        running = value;
+        running = false;
+
+        synchronized (animatorToken)
+        {
+            animatorToken.notify();
+        }
     }
 
 
@@ -56,37 +61,37 @@ public class ShapeAnimationManager
     // ----------------------------------------------------------
     public void enqueue(Shape.Animator<?> animator)
     {
-    	if (isTestingMode())
-    	{
-    		// Just run the animator instantaneously.
-    		
-    		long endTime = System.currentTimeMillis()
-    				+ animator.getDelay() + animator.getDuration();
-    		animator.advanceTo(endTime);
-    	}
-    	else
-    	{
-	        Shape shape = animator.getShape();
-	        if (currentAnimators.containsKey(shape))
-	        {
-	            currentAnimators.get(shape).stop();
-	        }
-	
-	        currentAnimators.put(shape, animator);
-	        animators.offer(animator);
-	
-	        synchronized (animatorToken)
-	        {
-	            animatorToken.notify();
-	        }
-    	}
+        if (isTestingMode())
+        {
+            // Just run the animator instantaneously.
+
+            long endTime = System.currentTimeMillis()
+                    + animator.getDelay() + animator.getDuration();
+            animator.advanceTo(endTime);
+        }
+        else
+        {
+            Shape shape = animator.getShape();
+            if (currentAnimators.containsKey(shape))
+            {
+                currentAnimators.get(shape).stop();
+            }
+
+            currentAnimators.put(shape, animator);
+            animators.offer(animator);
+
+            synchronized (animatorToken)
+            {
+                animatorToken.notify();
+            }
+        }
     }
 
 
     // ----------------------------------------------------------
     public void stop(Shape shape)
     {
-    	Shape.Animator<?> animator = currentAnimators.get(shape);
+        Shape.Animator<?> animator = currentAnimators.get(shape);
 
         if (animator != null)
         {
@@ -98,20 +103,20 @@ public class ShapeAnimationManager
     // ----------------------------------------------------------
     public void start()
     {
-    	if (!isTestingMode())
-    	{
-    		new ProductionThread().start();
-    	}
+        if (!isTestingMode())
+        {
+            new ProductionThread().start();
+        }
     }
 
 
     // ----------------------------------------------------------
     private boolean isTestingMode()
     {
-    	String testingProp = System.getProperty(
-    			TESTING_MODE_PROPERTY, "false");
-    	
-    	return Boolean.parseBoolean(testingProp);    	
+        String testingProp = System.getProperty(
+                TESTING_MODE_PROPERTY, "false");
+
+        return Boolean.parseBoolean(testingProp);
     }
 
 
@@ -119,64 +124,64 @@ public class ShapeAnimationManager
     private class ProductionThread extends Thread
     {
         // ----------------------------------------------------------
-	    @Override
-	    public void run()
-	    {
-	        while (running)
-	        {
-	            waitForSignal();
-	            view.internalSetAutoRepaintForThread(false);
-	
-	            while (!animators.isEmpty())
-	            {
-	                long start = System.currentTimeMillis();
-	
-	                Iterator<Shape.Animator<?>> it = animators.iterator();
-	
-	                while (it.hasNext())
-	                {
-	                	Shape.Animator<?> animator = it.next();
-	                    Shape shape = animator.getShape();
-	
-	                    boolean ended =
-	                        animator.advanceTo(start);
-	
-	                    if (ended)
-	                    {
-	                        it.remove();
-	
-	                        if (currentAnimators.get(shape) == animator)
-	                        {
-	                            currentAnimators.remove(shape);
-	                        }
-	                    }
-	                }
-	
-	                view.repaint();
-	
-	                long end = System.currentTimeMillis();
-	                long length = end - start;
-	
-	                long FRAME_TIME = 20;
-	
-	                if (length < FRAME_TIME)
-	                {
-	                    try
-	                    {
-	                        Thread.sleep(FRAME_TIME - length);
-	                    }
-	                    catch (InterruptedException e)
-	                    {
-	                    	// Do nothing.
-	                    }
-	                }
-	
-	                end = System.currentTimeMillis();
-	            }
-	
-	            view.internalSetAutoRepaintForThread(true);
-	        }
-	    }
+        @Override
+        public void run()
+        {
+            while (isRunning())
+            {
+                waitForSignal();
+                view.internalSetAutoRepaintForThread(false);
+
+                while (!animators.isEmpty())
+                {
+                    long start = System.currentTimeMillis();
+
+                    Iterator<Shape.Animator<?>> it = animators.iterator();
+
+                    while (it.hasNext())
+                    {
+                        Shape.Animator<?> animator = it.next();
+                        Shape shape = animator.getShape();
+
+                        boolean ended =
+                            animator.advanceTo(start);
+
+                        if (ended)
+                        {
+                            it.remove();
+
+                            if (currentAnimators.get(shape) == animator)
+                            {
+                                currentAnimators.remove(shape);
+                            }
+                        }
+                    }
+
+                    view.repaint();
+
+                    long end = System.currentTimeMillis();
+                    long length = end - start;
+
+                    long FRAME_TIME = 20;
+
+                    if (length < FRAME_TIME)
+                    {
+                        try
+                        {
+                            Thread.sleep(FRAME_TIME - length);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            // Do nothing.
+                        }
+                    }
+
+                    end = System.currentTimeMillis();
+                }
+
+                view.internalSetAutoRepaintForThread(true);
+            }
+        }
     }
 
 

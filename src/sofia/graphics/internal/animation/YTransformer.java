@@ -24,14 +24,14 @@ public class YTransformer implements PropertyTransformer
     // ----------------------------------------------------------
     public void onStart()
     {
-        start = GeometryUtils.copy(shape.getPosition());
+        //start = GeometryUtils.copy(shape.getPosition());
     }
 
 
     // ----------------------------------------------------------
     public void transform(float t)
     {
-        shape.setPosition(new PointF(
-            start.x, start.y + (end - start.y) * t));
+        /*shape.setPosition(new PointF(
+            start.x, start.y + (end - start.y) * t));*/
     }
 }
