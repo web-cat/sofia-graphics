@@ -35,6 +35,7 @@ public class ZIndexComparator implements Comparator<Shape>
     // ----------------------------------------------------------
     /**
      * Compare the insertion times of two shapes.
+     *
      * @param shape1 The first shape.
      * @param shape2 The second shape.
      * @return -1 if shape1 was added to the ShapeSet before shape2,
@@ -43,8 +44,13 @@ public class ZIndexComparator implements Comparator<Shape>
      */
     protected int compareTimestamps(Shape shape1, Shape shape2)
     {
-        Long shape1Time = shape1.getTimeAddedToParent();
-        Long shape2Time = shape2.getTimeAddedToParent();
+        ShapeField field1 = shape1.getShapeField();
+        ShapeField field2 = shape2.getShapeField();
+
+        Long shape1Time = (field1 != null) ?
+                field1.getShapeAddedTime(shape1) : null;
+        Long shape2Time = (field2 != null) ?
+                field2.getShapeAddedTime(shape2) : null;
 
         if (shape1Time == null && shape2Time == null)
         {

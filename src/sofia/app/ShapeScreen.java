@@ -1,14 +1,13 @@
 package sofia.app;
 
-import java.util.Set;
-
+import sofia.graphics.Color;
+import sofia.graphics.CoordinateSystem;
+import sofia.graphics.Shape;
+import sofia.graphics.ShapeField;
+import sofia.graphics.ShapeFilter;
+import sofia.graphics.ShapeView;
 import android.graphics.PointF;
 import android.view.View;
-import sofia.graphics.Color;
-import sofia.graphics.Shape;
-import sofia.graphics.ShapeManipulating;
-import sofia.graphics.ShapeQuerying;
-import sofia.graphics.ShapeView;
 
 // -------------------------------------------------------------------------
 /**
@@ -34,7 +33,6 @@ import sofia.graphics.ShapeView;
  */
 public abstract class ShapeScreen
     extends Screen
-    implements ShapeManipulating, ShapeQuerying
 {
     //~ Fields ................................................................
 
@@ -221,75 +219,72 @@ public abstract class ShapeScreen
 
 
     // ----------------------------------------------------------
-    public Set<Shape> getShapes()
+    public ShapeFilter<Shape> getShapes()
     {
         return shapeView.getShapes();
     }
 
 
     // ----------------------------------------------------------
-    public <MyShape extends Shape> Set<MyShape> getShapes(Class<MyShape> cls)
+    public ShapeField getShapeField()
     {
-        return shapeView.getShapes(cls);
+        return shapeView.getShapeField();
     }
 
 
     // ----------------------------------------------------------
-    public Shape getShapeAt(float x, float y)
+    public void setShapeField(ShapeField newField)
     {
-        return shapeView.getShapeAt(x, y);
+        shapeView.setShapeField(newField);
     }
 
 
     // ----------------------------------------------------------
-    public <MyShape extends Shape> MyShape getShapeAt(float x, float y,
-            Class<MyShape> cls)
+    public CoordinateSystem getCoordinateSystem()
     {
-        return shapeView.getShapeAt(x, y, cls);
+        return shapeView.getCoordinateSystem();
     }
 
 
     // ----------------------------------------------------------
-    public Shape getShapeAt(PointF point)
+    /**
+     * Gets the gravity of the physical world represented by this shape screen.
+     *
+     * @return a {@code PointF} object whose x and y components are the
+     *     horizontal and vertical acceleration due to gravity (in units/sec^2)
+     *     of the physical world represented by this shape screen
+     */
+    public PointF getGravity()
     {
-        return shapeView.getShapeAt(point);
+        return getShapeField().getGravity();
     }
 
 
     // ----------------------------------------------------------
-    public <MyShape extends Shape> MyShape getShapeAt(PointF point,
-            Class<MyShape> cls)
+    /**
+     * Sets the gravity of the physical world represented by this shape screen.
+     *
+     * @param gravity a {@code PointF} whose x and y components are the
+     *     horizontal and vertical acceleration due to gravity (in units/sec^2)
+     *     of the physical world represented by this shape screen
+     */
+    public void setGravity(PointF gravity)
     {
-        return shapeView.getShapeAt(point, cls);
+        getShapeField().setGravity(gravity);
     }
 
 
     // ----------------------------------------------------------
-    public Set<Shape> getShapesAt(float x, float y)
+    /**
+     * Sets the gravity of the physical world represented by this shape screen.
+     *
+     * @param xGravity the horizontal acceleration due to gravity (in
+     *     units/sec^2)
+     * @param yGravity the vertical acceleration due to gravity (in
+     *     units/sec^2)
+     */
+    public void setGravity(float xGravity, float yGravity)
     {
-        return shapeView.getShapesAt(x, y);
-    }
-
-
-    // ----------------------------------------------------------
-    public <MyShape extends Shape> Set<MyShape> getShapesAt(float x, float y,
-            Class<MyShape> cls)
-    {
-        return shapeView.getShapesAt(x, y, cls);
-    }
-
-
-    // ----------------------------------------------------------
-    public Set<Shape> getShapesAt(PointF point)
-    {
-        return shapeView.getShapesAt(point);
-    }
-
-
-    // ----------------------------------------------------------
-    public <MyShape extends Shape> Set<MyShape> getShapesAt(PointF point,
-            Class<MyShape> cls)
-    {
-        return shapeView.getShapesAt(point, cls);
+        getShapeField().setGravity(xGravity, yGravity);
     }
 }

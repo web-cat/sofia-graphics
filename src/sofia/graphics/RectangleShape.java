@@ -99,6 +99,28 @@ public class RectangleShape extends FillableShape
 
 
     // ----------------------------------------------------------
+    public void setLeftTop(float left, float top)
+    {
+        RectF _bounds = getBounds();
+        _bounds.left = left;
+        _bounds.top = top;
+
+        setBounds(_bounds);
+    }
+
+
+    // ----------------------------------------------------------
+    public void setRightBottom(float right, float bottom)
+    {
+        RectF _bounds = getBounds();
+        _bounds.right = right;
+        _bounds.bottom = bottom;
+
+        setBounds(_bounds);
+    }
+
+
+    // ----------------------------------------------------------
     @Override
     public void draw(Canvas canvas)
     {
@@ -110,8 +132,16 @@ public class RectangleShape extends FillableShape
             canvas.drawRect(bounds, fillPaint);
         }
 
-        Paint paint = getPaint();
-        canvas.drawRect(bounds, paint);
+        if (getImage() != null)
+        {
+            drawBitmap(canvas);
+        }
+
+        if (!getColor().isTransparent())
+        {
+            Paint paint = getPaint();
+            canvas.drawRect(bounds, paint);
+        }
     }
 
 

@@ -1,9 +1,6 @@
 package sofia.graphics;
 
-import java.util.Collections;
-import java.util.Set;
-
-import org.jbox2d.dynamics.Body;
+import org.jbox2d.collision.shapes.PolygonShape;
 
 import sofia.graphics.internal.animation.TypeSizeTransformer;
 import android.content.Context;
@@ -12,6 +9,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.util.TypedValue;
 
@@ -26,25 +24,13 @@ public class TextShape extends Shape
 {
     //~ Fields ................................................................
 
+    private PointAndAnchor pointAndAnchor;
     private String text;
     private Typeface typeface;
     private float typeSize;
 
 
     //~ Constructors ..........................................................
-
-    // ----------------------------------------------------------
-    /**
-     * Creates a {@code TextShape} with the specified text that is positioned
-     * at the center of the view that it is added to.
-     *
-     * @param text the text to draw in the shape
-     */
-    public TextShape(String text)
-    {
-        this(text, Anchor.CENTER.anchoredAt(Anchor.CENTER.ofView()));
-    }
-
 
     // ----------------------------------------------------------
     /**
@@ -90,14 +76,44 @@ public class TextShape extends Shape
      */
     public TextShape(String text, PointAndAnchor pointAndAnchor)
     {
-        setBounds(pointAndAnchor.sized(new TextShapeSize()));
-
+        this.pointAndAnchor = pointAndAnchor;
         this.text = text;
         this.typeface = Typeface.DEFAULT;
     }
 
 
     //~ Methods ...............................................................
+
+    // ----------------------------------------------------------
+    public RectF getBounds()
+    {
+        Rect textBounds = new Rect();
+        Paint paint = getPaint();
+        paint.getTextBounds(text, 0, text.length(), textBounds);
+
+        PointF pt = pointAndAnchor.getPoint();
+        RectF bounds = new RectF(
+                pt.x + textBounds.left, pt.y + textBounds.top,
+                pt.x + textBounds.right, pt.y + textBounds.bottom);
+        pointAndAnchor.getAnchor().getPoint(bounds);
+
+        return bounds;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Updates the position of the text shape so that the text would be drawn
+     * in the center of the bounding rectangle.
+     *
+     * @param newBounds the new bounds
+     */
+    public void setBounds(RectF newBounds)
+    {
+        pointAndAnchor = Anchor.CENTER.anchoredAt(
+                newBounds.centerX(), newBounds.centerY());
+    }
+
 
     // ----------------------------------------------------------
     @Override @SuppressWarnings("rawtypes")
@@ -128,7 +144,7 @@ public class TextShape extends Shape
     public void setText(String text)
     {
         this.text = text;
-        conditionallyRelayout();
+        conditionallyRepaint();
     }
 
 
@@ -158,7 +174,7 @@ public class TextShape extends Shape
     public void setTypeface(Typeface typeface)
     {
         this.typeface = typeface;
-        conditionallyRelayout();
+        conditionallyRepaint();
     }
 
 
@@ -279,7 +295,7 @@ public class TextShape extends Shape
 
         this.typeface = newTypeface;
         this.typeSize = textSize;
-        conditionallyRelayout();
+        conditionallyRepaint();
     }
 
 
@@ -309,7 +325,7 @@ public class TextShape extends Shape
     public void setTypeSize(float typeSize)
     {
         this.typeSize = typeSize;
-        conditionallyRelayout();
+        conditionallyRepaint();
     }
 
 
@@ -376,56 +392,12 @@ public class TextShape extends Shape
     @Override
     protected void createFixtures()
     {
-        // TODO Auto-generated method stub
-    }
+        PolygonShape box = new PolygonShape();
+        RectF bounds = getBounds();
+        box.setAsBox(
+                Math.abs(bounds.width() / 2), Math.abs(bounds.height() / 2));
 
-
-    // ----------------------------------------------------------
-    private class TextShapeSize
-        extends SizeF
-        implements ResolvableGeometry<TextShapeSize>
-    {
-        // ----------------------------------------------------------
-        public TextShapeSize()
-        {
-            super(Float.NaN, Float.NaN);
-        }
-
-
-        // ----------------------------------------------------------
-        public TextShapeSize copy()
-        {
-            return this;
-        }
-
-
-        // ----------------------------------------------------------
-        public void resolveGeometry(Shape shape)
-        {
-            Rect bounds = new Rect();
-
-            if (text != null)
-            {
-                getPaint().getTextBounds(text, 0, text.length(), bounds);
-            }
-
-            this.width = bounds.width();
-            this.height = bounds.height();
-        }
-
-
-        // ----------------------------------------------------------
-        public boolean isGeometryResolved()
-        {
-            return false;
-        }
-
-
-        // ----------------------------------------------------------
-        public Set<Shape> getShapeDependencies()
-        {
-            return Collections.<Shape>emptySet();
-        }
+        addFixtureForShape(box);
     }
 
 

@@ -6,9 +6,8 @@ import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.Body;
 
 import sofia.graphics.internal.Box2DUtils;
-
-import android.graphics.Paint;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
 
@@ -94,7 +93,7 @@ public class OvalShape extends FillableShape
     public OvalShape(PointF center, float horizontalRadius,
             float verticalRadius)
     {
-        this.center = center;
+        this.center = Geometry.clone(center);
         this.xRadius = horizontalRadius;
         this.yRadius = verticalRadius;
         updateTransform(center.x, center.y);
@@ -204,8 +203,16 @@ public class OvalShape extends FillableShape
             canvas.drawOval(bounds, fillPaint);
         }
 
-        Paint paint = getPaint();
-        canvas.drawOval(bounds, paint);
+        if (getImage() != null)
+        {
+            drawBitmap(canvas);
+        }
+
+        if (!getColor().isTransparent())
+        {
+            Paint paint = getPaint();
+            canvas.drawOval(bounds, paint);
+        }
     }
 
 

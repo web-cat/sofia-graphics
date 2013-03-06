@@ -1,7 +1,7 @@
 package sofia.graphics;
 
 import android.graphics.PointF;
-import android.util.FloatMath;
+import android.graphics.RectF;
 
 //-------------------------------------------------------------------------
 /**
@@ -101,7 +101,36 @@ public class Geometry
         float dx = x2 - x1;
         float dy = y2 - y1;
 
-        return FloatMath.sqrt(dx * dx + dy * dy);
+        return (float) Math.sqrt(dx * dx + dy * dy);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Calculates the magnitude of a vector given by its x- and y-coordinates.
+     *
+     * @param vector the vector
+     *
+     * @return the magnitude of the vector (x, y)
+     */
+    public static float magnitude(PointF vector)
+    {
+        return magnitude(vector.x, vector.y);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Calculates the magnitude of a vector given by its x- and y-coordinates.
+     *
+     * @param x the x-coordinate of the vector
+     * @param y the y-coordinate of the vector
+     *
+     * @return the magnitude of the vector (x, y)
+     */
+    public static float magnitude(float x, float y)
+    {
+        return (float) Math.sqrt(x * x + y * y);
     }
 
 
@@ -152,5 +181,51 @@ public class Geometry
     public static PointF midpoint(float x1, float y1, float x2, float y2)
     {
         return new PointF(x1 + (x2 - x1) / 2, y1 + (y2 - y1) / 2);
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Converts a point to a string of the form "(x, y)". This method is
+     * necessary because the Android {@code PointF} class does not override
+     * {@code toString} in a meaningful way.
+     *
+     * @param point the point
+     * @return a string of the form "(x, y)"
+     */
+    public static String toString(PointF point)
+    {
+        return "(" + point.x + ", " + point.y + ")";
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Converts a rectangle to a string of the form
+     * "(left, top)-(right, bottom)". This method mainly just exists for
+     * symmetry with the one for {@code PointF} above.
+     *
+     * @param rect the rectangle
+     * @return a string of the form "(left, top)-(right, bottom)"
+     */
+    public static String toString(RectF rect)
+    {
+        return "(" + rect.left + ", " + rect.top + ")-("
+                + rect.right + ", " + rect.bottom + ")";
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Creates a copy of the specified point.
+     *
+     * @param point the point to copy
+     * @return a new point with the same coordinates as the original
+     */
+    public static PointF clone(PointF point)
+    {
+        // Google, why is there a copy constructor for RectF but not for
+        // PointF?
+        return new PointF(point.x, point.y);
     }
 }

@@ -7,28 +7,18 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 
-import org.jbox2d.callbacks.ContactImpulse;
-import org.jbox2d.callbacks.ContactListener;
 import org.jbox2d.callbacks.QueryCallback;
-import org.jbox2d.collision.AABB;
-import org.jbox2d.collision.Manifold;
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.Fixture;
 import org.jbox2d.dynamics.World;
-import org.jbox2d.dynamics.contacts.Contact;
 
-import sofia.graphics.internal.Box2DUtils;
-import sofia.graphics.internal.GeometryUtils;
 import sofia.graphics.internal.ShapeAnimationManager;
-import sofia.graphics.internal.ShapeSorter;
 import sofia.internal.events.EventDispatcher;
 import sofia.internal.events.MotionEventDispatcher;
-import sofia.internal.events.ReversibleEventDispatcher;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.PointF;
-import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 import android.util.AttributeSet;
@@ -47,11 +37,10 @@ import android.view.SurfaceView;
  */
 public class ShapeView
     extends SurfaceView
-    implements ShapeParent, ShapeManipulating, ShapeQuerying
 {
     //~ Fields ................................................................
 
-    private ShapeSet<Shape> shapes;
+    private ShapeField shapeField;
     private boolean needsLayout;
     private boolean surfaceCreated;
     private Color backgroundColor;
@@ -63,9 +52,6 @@ public class ShapeView
     private RepaintThread repaintThread;
     private PhysicsThread physicsThread;
     private CoordinateSystem coordinateSystem;
-
-    // JBox2D support
-    private World b2World;
 
     // Event forwarders
     private final CoordinateRespectingMotionEventDispatcher onTouchDown =
@@ -85,15 +71,6 @@ public class ShapeView
             new EventDispatcher("onRotateGesture");
     private static final EventDispatcher onFlingGesture =
             new EventDispatcher("onFlingGesture");
-
-    private static final EventDispatcher onCollisionWith =
-            new EventDispatcher("onCollisionWith");
-    private static final ReversibleEventDispatcher onCollisionBetween =
-            new ReversibleEventDispatcher("onCollisionBetween");
-    private static final EventDispatcher onCollisionEndedWith =
-            new EventDispatcher("onCollisionEndedWith");
-    private static final ReversibleEventDispatcher onCollisionEndedBetween =
-            new ReversibleEventDispatcher("onCollisionEndedBetween");
 
     private Shape shapeBeingDragged;
 
@@ -154,9 +131,6 @@ public class ShapeView
     // ----------------------------------------------------------
     private void init()
     {
-        b2World = new World(new Vec2(0, 0));
-        b2World.setContactListener(new ContactHandlers());
-
         threadsBlockingRepaint = new HashSet<Long>();
 
         getHolder().addCallback(new SurfaceHolderCallback());
@@ -171,28 +145,14 @@ public class ShapeView
                 array.getColor(0, android.graphics.Color.BLACK));
         array.recycle();
 
-        shapes = new ShapeSet<Shape>(this);
+        shapeField = new ShapeField();
+        shapeField.setView(this);
 //        gestureDetector = new GestureDetector(new ShapeGestureListener());
 
         gestureDetectors = new ArrayList<Object>();
         coordinateSystem = new CoordinateSystem(this);
 
         setFocusableInTouchMode(true);
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * <strong>This method is intended for internal and advanced usage
-     * only.</strong> Gets the JBox2D {@code World} that manages the physical
-     * bodies inside this shape view.
-     *
-     * @return the JBox2D world that manages the physical bodies inside this
-     *     shape view
-     */
-    public World getB2World()
-    {
-        return b2World;
     }
 
 
@@ -206,7 +166,7 @@ public class ShapeView
      */
     public PointF getGravity()
     {
-        return Box2DUtils.vec2ToPointF(b2World.getGravity());
+        return shapeField.getGravity();
     }
 
 
@@ -220,7 +180,7 @@ public class ShapeView
      */
     public void setGravity(PointF gravity)
     {
-        b2World.setGravity(Box2DUtils.pointFToVec2(gravity));
+        shapeField.setGravity(gravity);
     }
 
 
@@ -235,7 +195,7 @@ public class ShapeView
      */
     public void setGravity(float xGravity, float yGravity)
     {
-        setGravity(new PointF(xGravity, yGravity));
+        shapeField.setGravity(xGravity, yGravity);
     }
 
 
@@ -298,237 +258,52 @@ public class ShapeView
 
     // ----------------------------------------------------------
     /**
-     * Gets a set that represents all the shapes currently in this view. Note
-     * that this set is not a copy of the view's shape set; changes to this set
-     * will <em>directly affect</em> the view.
+     * Gets the {@link ShapeField} that the view is currently displaying and
+     * simulating.
      *
-     * @return a set that represents all the shapes currently in this view
+     * @return the {@link ShapeField} currently in use by the view
      */
-    public ShapeSet<Shape> getShapes()
+    public ShapeField getShapeField()
     {
-        return shapes;
+        return shapeField;
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Get all the shapes of the specified type in this view.
+     * Sets the {@link ShapeField} that the view is currently displaying and
+     * simulating. When developing games or simulations that involve multiple
+     * "levels" or other complex multiple shape layouts, this method can be
+     * used to quickly and easily swap out the entire set of shapes used by the
+     * view.
      *
-     * @param cls Class of objects to look for (passing 'null' will find all
-     *            objects).
-     * @param <MyShape> The type of shape to look for, as specified
-     *                  in the cls parameter.
-     * @return List of all the shapes of the specified type (or any of its
-     *         subtypes) in the view.
+     * @param newField the {@link ShapeField} to be used by the view
      */
-    public <ShapeType extends Shape> ShapeSet<ShapeType> getShapes(
-            Class<ShapeType> cls)
+    public void setShapeField(ShapeField newField)
     {
-        if (cls == null)
+        if (newField == null)
         {
-            @SuppressWarnings("unchecked")
-            ShapeSet<ShapeType> result = (ShapeSet<ShapeType>) getShapes();
-            return result;
+            throw new IllegalArgumentException("A ShapeView cannot have a "
+                    + "null ShapeField.");
         }
 
-        synchronized (shapes)
-        {
-            ShapeSet<ShapeType> result = new ShapeSet<ShapeType>();
-
-            for (Shape shape : getShapes())
-            {
-                if (cls.isInstance(shape))
-                {
-                    result.add(cls.cast(shape));
-                }
-            }
-
-            return result;
-        }
+        shapeField = newField;
+        conditionallyRepaint();
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Get one shape (if any) that overlaps the specified location.  If
-     * multiple shapes overlap that location, the one "in front" (drawn
-     * latest) is returned.
-     * @param x The x-coordinate of the location to check.
-     * @param y The y-coordinate of the location to check.
-     * @return The front-most shape at the specified location, or null if none.
-     */
-    public Shape getShapeAt(float x, float y)
-    {
-        return getShapeAt(x, y, null);
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Get one shape of the specified type (if any) that overlaps the
-     * specified location.  If multiple shapes overlap that location, the
-     * one "in front" (drawn latest) is returned.
-     * @param x The x-coordinate of the location to check.
-     * @param y The y-coordinate of the location to check.
-     * @param cls Class of shape to look for (passing 'null' will find any
-     *            object).
-     * @param <MyShape> The type of shape to look for, as specified
-     *                  in the cls parameter.
-     * @return The front-most shape at the specified location, or null if none.
-     */
-    public <MyShape extends Shape> MyShape getShapeAt(
-        float x, float y, Class<MyShape> cls)
-    {
-        ShapeSet<MyShape> shapes = getShapesAt(x, y, cls);
-
-        if (shapes.isEmpty())
-        {
-            return null;
-        }
-        else
-        {
-            return shapes.frontToBackIterator().next();
-        }
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Get one shape (if any) that overlaps the specified location.  If
-     * multiple shapes overlap that location, the one "in front" (drawn
-     * latest) is returned.
-     * @param point The location to check.
-     * @return The front-most shape at the specified location, or null if none.
-     */
-    public Shape getShapeAt(PointF point)
-    {
-        return getShapeAt(point, null);
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Get one shape of a specified type (if any) that overlaps the
-     * specified location.  If multiple shapes overlap that location, the
-     * one "in front" (drawn latest) is returned.
-     * @param point The location to check.
-     * @param cls Class of shape to look for (passing 'null' will find any
-     *            object).
-     * @param <MyShape> The type of shape to look for, as specified
-     *                  in the cls parameter.
-     * @return The front-most shape at the specified location, or null if none.
-     */
-    public <MyShape extends Shape> MyShape getShapeAt(
-        PointF point, Class<MyShape> cls)
-    {
-        return getShapeAt(point.x, point.y, cls);
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Get all the shapes overlapping the specified location.
-     * @param x The x-coordinate of the location to check.
-     * @param y The y-coordinate of the location to check.
-     * @return A set of all shapes at the specified location.
-     */
-    public Set<Shape> getShapesAt(float x, float y)
-    {
-        return getShapesAt(x, y, null);
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Get all the shapes of the specified type overlapping the specified
-     * location.
-     * @param x The x-coordinate of the location to check.
-     * @param y The y-coordinate of the location to check.
-     * @param cls Class of shape to look for (passing 'null' will find any
-     *            object).
-     * @param <MyShape> The type of shape to look for, as specified
-     *                  in the cls parameter.
-     * @return A set of all shapes at the specified location.
-     */
-    public <ShapeType extends Shape> ShapeSet<ShapeType> getShapesAt(
-        float x, float y, Class<ShapeType> cls)
-    {
-        Vec2 point = new Vec2(x, y);
-        AABB queryAABB = new AABB(point, point);
-
-        LocationQueryCallback<ShapeType> callback =
-                new LocationQueryCallback<ShapeType>(cls, point);
-        b2World.queryAABB(callback, queryAABB);
-
-        return callback.getFoundShapes();
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Get all the shapes overlapping the specified location.
-     * @param point The location to check.
-     * @return A set of all shapes at the specified location.
-     */
-    public Set<Shape> getShapesAt(PointF point)
-    {
-        return getShapesAt(point, null);
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Get all the shapes of the specified type overlapping the specified
-     * location.
-     * @param point The location to check.
-     * @param cls Class of shape to look for (passing 'null' will find any
-     *            object).
-     * @param <MyShape> The type of shape to look for, as specified
-     *                  in the cls parameter.
-     * @return A set of all shapes at the specified location.
-     */
-    public <MyShape extends Shape> Set<MyShape> getShapesAt(
-        PointF point, Class<MyShape> cls)
-    {
-        return getShapesAt(point.x, point.y, cls);
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Return all the shapes that intersect the given shape. This takes the
-     * graphical extent of objects into consideration.
+     * Gets a filter that can be used to find shapes that match certain
+     * criteria. This method is a shortcut for
+     * {@code getShapeField().getShapes()}.
      *
-     * @param shape A Shape in the view.
-     * @param cls Class of other shapes to find (null or Object.class will
-     *            find all classes).
-     * @param <MyShape> The type of shape to look for, as specified
-     *                  in the cls parameter.
-     * @return A set of shapes that intersect the given shape.
+     * @return a filter that can be used to find shapes that match certain
+     *     criteria
      */
-    public <MyShape extends Shape> Set<MyShape> getIntersectingShapes(
-        Shape shape, Class<MyShape> cls)
+    public ShapeFilter<Shape> getShapes()
     {
-        return null; //collisionChecker.getIntersectingObjects(shape, cls);
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Return all the shapes that intersect the given shape. This takes the
-     * graphical extent of objects into consideration.
-     *
-     * @param shape A Shape in the view.
-     * @param cls Class of other shapes to find (null or Object.class will
-     *            find all classes).
-     * @param <MyShape> The type of shape to look for, as specified
-     *                  in the cls parameter.
-     * @return A set of shapes that intersect the given shape.
-     */
-    public <MyShape extends Shape> MyShape getIntersectingShape(
-        Shape shape, Class<MyShape> cls)
-    {
-        return null; //collisionChecker.getOneIntersectingObject(shape, cls);
+        return shapeField.getShapes();
     }
 
 
@@ -608,90 +383,39 @@ public class ShapeView
 
     // ----------------------------------------------------------
     /**
-     * Add a shape to this view.
-     * @param shape The shape to add.
+     * Adds a shape to the {@link ShapeField} currently in use by this view.
+     * This method is a shortcut for {@code getShapeField().add(shape)}.
+     *
+     * @param shape the shape to add
      */
     public void add(Shape shape)
     {
-        shapes.add(shape);
+        shapeField.add(shape);
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Remove a shape from this view.
-     * @param shape The shape to remove.
+     * Removes a shape from the {@link ShapeField} currently in use by this
+     * view. This method is a shortcut for
+     * {@code getShapeField().remove(shape)}.
+     *
+     * @param shape the shape to remove
      */
     public void remove(Shape shape)
     {
-        shapes.remove(shape);
+        shapeField.remove(shape);
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Removes all shapes currently in this view.
+     * Removes all shapes from the {@link ShapeField} currently in use by this
+     * view. This method is a shortcut for {@code getShapeField().clear()}.
      */
     public void clear()
     {
-        shapes.clear();
-    }
-
-
-    // ----------------------------------------------------------
-    public void onShapesAdded(Iterable<? extends Shape> addedShapes)
-    {
-        boolean needsRepaint = false;
-
-        synchronized (shapes)
-        {
-            for (Shape shape : addedShapes)
-            {
-                shape.setParent(this);
-                shape.createB2Body(b2World);
-
-                if (getWidth() != 0 && getHeight() != 0)
-                {
-                    GeometryUtils.resolveGeometry(shape.getBounds(), shape);
-                    needsRepaint = true;
-                }
-            }
-        }
-
-        if (needsRepaint)
-        {
-            conditionallyRelayout();
-        }
-    }
-
-
-    // ----------------------------------------------------------
-    public void onShapesRemoved(Iterable<? extends Shape> removedShapes)
-    {
-        synchronized (shapes)
-        {
-            for (Shape shape : removedShapes)
-            {
-                shape.destroyB2Body(b2World);
-                shape.setParent(null);
-            }
-        }
-
-        conditionallyRepaint();
-    }
-
-
-    // ----------------------------------------------------------
-    public void onZIndexChanged(Shape shape)
-    {
-        remove(shape);
-        add(shape);
-    }
-
-
-    // ----------------------------------------------------------
-    public void onPositionChanged(Shape shape)
-    {
+        shapeField.clear();
     }
 
 
@@ -719,13 +443,6 @@ public class ShapeView
         //setBackgroundColor(color.toRawColor());
 
         conditionallyRepaint();
-    }
-
-
-    // ----------------------------------------------------------
-    public ShapeParent getShapeParent()
-    {
-        return null;
     }
 
 
@@ -797,60 +514,6 @@ public class ShapeView
 
 
     // ----------------------------------------------------------
-    public RectF getBounds()
-    {
-        return new RectF(0, 0, getWidth(), getHeight());
-    }
-
-
-    // ----------------------------------------------------------
-    @Override
-    protected void onLayout(
-        boolean changed, int left, int top, int right, int bottom)
-    {
-        super.onLayout(changed, left, top, right, bottom);
-    }
-
-
-    // ----------------------------------------------------------
-    public void conditionallyRelayout()
-    {
-        if (doesAutoRepaint())
-        {
-            relayout();
-        }
-    }
-
-
-    // ----------------------------------------------------------
-    public void relayout()
-    {
-        if (needsLayout)
-        {
-            synchronized (shapes)
-            {
-                ShapeSorter sorter = new ShapeSorter(shapes);
-
-                for (Shape shape : sorter.sorted())
-                {
-                    RectF bounds = shape.getBounds();
-
-                    if (!GeometryUtils.isGeometryResolved(bounds))
-                    {
-                        GeometryUtils.resolveGeometry(bounds, shape);
-                        shape.onBoundsResolved();
-                    }
-                }
-            }
-
-            needsLayout = false;
-        }
-
-        repaint();
-    }
-
-
-    // ----------------------------------------------------------
     /**
      * Draw all of this view's shapes on the given canvas.
      * @param canvas The canvas to draw on.
@@ -860,9 +523,9 @@ public class ShapeView
         canvas.save();
         coordinateSystem.applyTransform(canvas);
 
-        synchronized (shapes)
+        synchronized (shapeField.getB2World())
         {
-            for (Shape shape : shapes)
+            for (Shape shape : shapeField)
             {
                 if (shape.isVisible() && shape.getBounds() != null)
                 {
@@ -1018,7 +681,14 @@ public class ShapeView
         }
         else
         {
-            Set<Shape> shapes = getShapesAt(e.getX(), e.getY());
+            // FIXME Need a better way to figure out "fuzzy touches"
+            PointF worldPt = coordinateSystem.deviceToLocal(
+                    e.getX(), e.getY());
+            PointF otherPt = coordinateSystem.deviceToLocal(
+                    e.getX() + 10, e.getY());
+            float radius = Math.abs(otherPt.x - worldPt.x);
+
+            Iterable<Shape> shapes = getShapes().locatedWithin(worldPt, radius);
 
             for (Shape shape : shapes)
             {
@@ -1083,7 +753,7 @@ public class ShapeView
      */
     public boolean isInFrontOf(Shape left, Shape right)
     {
-        return shapes.isInFrontOf(left, right);
+        return shapeField.isInFrontOf(left, right);
     }
 
 
@@ -1179,10 +849,14 @@ public class ShapeView
                 int velIters = 3;
                 int posIters = 8;
 
-                synchronized (shapes)
+                World world = shapeField.getB2World();
+                synchronized (world)
                 {
-                    b2World.step(1f / FRAME_RATE, velIters, posIters);
+                    world.step(1f / FRAME_RATE, velIters, posIters);
                 }
+
+                shapeField.runDeferredOperations();
+                shapeField.notifySleepRecipients();
 
                 repaint();
 
@@ -1206,7 +880,7 @@ public class ShapeView
             int width, int height)
         {
             needsLayout = true;
-            relayout();
+            repaint();
         }
 
 
@@ -1357,73 +1031,6 @@ public class ShapeView
             }
         }
     }*/
-
-
-    // ----------------------------------------------------------
-    private class ContactHandlers implements ContactListener
-    {
-        // ------------------------------------------------------
-        public void beginContact(Contact contact)
-        {
-            handleContact(contact, onCollisionBetween, onCollisionWith);
-        }
-
-
-        // ------------------------------------------------------
-        public void endContact(Contact contact)
-        {
-            handleContact(contact,
-                    onCollisionEndedBetween, onCollisionEndedWith);
-        }
-
-
-        // ------------------------------------------------------
-        public void postSolve(Contact arg0, ContactImpulse arg1)
-        {
-        }
-
-
-        // ------------------------------------------------------
-        public void preSolve(Contact arg0, Manifold arg1)
-        {
-        }
-
-
-        // ----------------------------------------------------------
-        private void handleContact(Contact contact,
-                ReversibleEventDispatcher betweenDispatcher,
-                EventDispatcher withDispatcher)
-        {
-            // TODO We may want to pass the contact info to the method as
-            // well...
-
-            Shape shape = (Shape) contact.m_fixtureA.m_userData;
-            Shape other = (Shape) contact.m_fixtureB.m_userData;
-
-            // Necessary sanity check?
-            if (shape != null && other != null)
-            {
-                boolean eventHandled =
-                    // Handle event on shapes
-                    withDispatcher.dispatch(shape, other)
-                    || withDispatcher.dispatch(other, shape)
-
-                    // Handled event on view
-                    || betweenDispatcher.dispatch(this, shape, other);
-
-                if (!eventHandled)
-                {
-                    // Handle event on screen
-                    Object ctxt = getContext();
-                    if (ctxt != null)
-                    {
-                        eventHandled = betweenDispatcher
-                            .dispatch(ctxt, shape, other);
-                    }
-                }
-            }
-        }
-    }
 
 
     private class CoordinateRespectingMotionEventDispatcher

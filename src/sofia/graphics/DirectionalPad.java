@@ -22,7 +22,7 @@ import android.view.MotionEvent;
  * @author  Last changed by $Author$
  * @version $Date$
  */
-public class DirectionalPad extends ImageShape
+public class DirectionalPad extends RectangleShape
 {
     //~ Fields ................................................................
 
@@ -86,7 +86,10 @@ public class DirectionalPad extends ImageShape
      */
     public DirectionalPad(RectF bounds)
     {
-        super(new Image(DirectionalPad.class), bounds);
+        super(bounds);
+
+        setActive(false);
+        setImage(new Image(DirectionalPad.class));
 
         inactiveAlpha = DEFAULT_INACTIVE_ALPHA;
         setAlpha(inactiveAlpha);

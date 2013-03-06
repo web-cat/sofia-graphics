@@ -1,7 +1,11 @@
 package sofia.graphics;
 
 import sofia.graphics.internal.animation.FillColorTransformer;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.RectF;
 
 // -------------------------------------------------------------------------
 /**
@@ -16,6 +20,7 @@ public abstract class FillableShape extends StrokedShape
 {
     //~ Fields ................................................................
 
+    private Image image;
     private boolean filled;
     private Color fillColor;
     private boolean fillColorSet;
@@ -104,9 +109,38 @@ public abstract class FillableShape extends StrokedShape
      */
     public void setFillColor(Color newFillColor)
     {
+        if (newFillColor == null)
+        {
+            throw new IllegalArgumentException("Color cannot be null. To "
+                    + "remove the color from a shape, use Color.transparent.");
+        }
+
+
         this.fillColor = newFillColor;
         this.fillColorSet = true;
         conditionallyRepaint();
+    }
+
+
+    // ----------------------------------------------------------
+    public Image getImage()
+    {
+        return image;
+    }
+
+
+    // ----------------------------------------------------------
+    public void setImage(Image newImage)
+    {
+        image = newImage;
+        conditionallyRepaint();
+    }
+
+
+    // ----------------------------------------------------------
+    public void setImage(String imageName)
+    {
+        setImage(new Image(imageName));
     }
 
 
@@ -172,6 +206,69 @@ public abstract class FillableShape extends StrokedShape
         paint.setStyle(Paint.Style.FILL_AND_STROKE);
         paint.setColor(getFillColor().toRawColor());
         return paint;
+    }
+
+
+    // ----------------------------------------------------------
+    protected void drawBitmap(Canvas canvas)
+    {
+        resolveBitmapIfNecessary();
+
+        // In some cases, the bitmap may be missing...
+        Bitmap bm = image.asBitmap();
+        if (bm != null)
+        {
+            RectF sortedBounds = new RectF(getBounds());
+            sortedBounds.sort();
+
+            // If the coordinate system is flipped in either direction, we need
+            // to do another temporary flip to ensure that the images are drawn
+            // in their native orientation.
+
+            CoordinateSystem cs = getParentView().getCoordinateSystem();
+            boolean flipX = cs.isFlippedX();
+            boolean flipY = cs.isFlippedY();
+
+            if (flipX || flipY)
+            {
+                canvas.save();
+
+                Matrix matrix = new Matrix();
+                matrix.setScale(flipX ? -1 : 1, flipY ? -1 : 1);
+                matrix.postTranslate(
+                        flipX ? sortedBounds.left + sortedBounds.right : 0,
+                        flipY ? sortedBounds.top + sortedBounds.bottom : 0);
+                canvas.concat(matrix);
+            }
+
+            canvas.drawBitmap(bm, null, sortedBounds, getImagePaint());
+
+            if (flipX || flipY)
+            {
+                canvas.restore();
+            }
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    protected Paint getImagePaint()
+    {
+        Paint paint = new Paint();
+        paint.setAntiAlias(true);
+        paint.setFilterBitmap(true);
+        paint.setDither(true);
+        return paint;
+    }
+
+
+    // ----------------------------------------------------------
+    private void resolveBitmapIfNecessary()
+    {
+        if (image != null && image.asBitmap() == null)
+        {
+            image.resolveAgainstContext(getParentView().getContext());
+        }
     }
 
 

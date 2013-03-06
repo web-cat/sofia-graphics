@@ -1,8 +1,6 @@
 package sofia.graphics;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.jbox2d.common.Vec2;
@@ -13,6 +11,7 @@ import org.jbox2d.dynamics.FixtureDef;
 import org.jbox2d.dynamics.World;
 
 import sofia.graphics.internal.Box2DUtils;
+import sofia.graphics.internal.FixtureIterator;
 import sofia.graphics.internal.GeometryUtils;
 import sofia.graphics.internal.animation.AlphaTransformer;
 import sofia.graphics.internal.animation.AnimationState;
@@ -49,11 +48,8 @@ public abstract class Shape
 {
     //~ Fields ................................................................
 
-    private static long ADD_TO_PARENT_COUNTER = 0;
-
     private int zIndex;
-    private long timeAddedToParent;
-    private ShapeParent parent;
+    private ShapeField shapeField;
     private boolean visible;
     private Color color;
     private float rotation;
@@ -66,7 +62,6 @@ public abstract class Shape
     // JBox2D support
     private BodyDef b2BodyDef;
     private Body b2Body;
-    private List<Fixture> b2Fixtures;
     private float restitution;
     private float density;
     private float friction;
@@ -83,37 +78,45 @@ public abstract class Shape
     {
         this.zIndex = 0;
         this.visible = true;
-        this.color = Color.white;
+        this.color = Color.clear;
         this.positionAnchor = new PointF(0, 0);
 
         b2BodyDef = new BodyDef();
         b2BodyDef.userData = this;
-
-        b2Fixtures = new ArrayList<Fixture>();
     }
 
 
     //~ Methods ...............................................................
 
     // ----------------------------------------------------------
-    /*package*/ void createB2Body(World b2World)
+    /*package*/ void createB2Body(final ShapeField field)
     {
-        b2Body = b2World.createBody(b2BodyDef);
-        createFixtures();
+        field.runOrDefer(new Runnable() {
+            public void run()
+            {
+                b2Body = field.getB2World().createBody(b2BodyDef);
+                createFixtures();
+            }
+        });
     }
 
 
     // ----------------------------------------------------------
-    /*package*/ void destroyB2Body(World b2World)
+    /*package*/ void destroyB2Body(final ShapeField field)
     {
         // Preserve in the BodyDef any properties of the Body that change on
         // their own through the simulation.
 
-        b2BodyDef.angle = b2Body.getAngle();
-        b2BodyDef.position = b2Body.getPosition();
+        field.runOrDefer(new Runnable() {
+            public void run()
+            {
+                b2BodyDef.angle = b2Body.getAngle();
+                b2BodyDef.position = b2Body.getPosition();
 
-        b2World.destroyBody(b2Body);
-        b2Body = null;
+                field.getB2World().destroyBody(b2Body);
+                b2Body = null;
+            }
+        });
     }
 
 
@@ -155,11 +158,14 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * TODO document
+     * Gets a value indicating how this shape acts with regard to motion in
+     * the physical world.
      *
-     * @return
+     * @return a {@link ShapeMotion} value indicating how this shape acts with
+     *     regard to motion in the physical world
+     * @see ShapeMotion
      */
-    public ShapeMotion getMotionType()
+    public ShapeMotion getShapeMotion()
     {
         return ShapeMotion.fromB2BodyType(b2BodyDef.type);
     }
@@ -167,15 +173,28 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * TODO document
+     * Sets a value indicating how this shape acts with regard to motion in
+     * the physical world.
      *
-     * @param motion
+     * @param motion a {@link ShapeMotion} value indicating how this shape acts
+     *     with regard to motion in the physical world
+     * @see ShapeMotion
      */
-    public void setMotionType(ShapeMotion motion)
+    public void setShapeMotion(ShapeMotion motion)
     {
-        // TODO should try recreating the body if this is called when the
-        // body already exists
-        b2BodyDef.type = motion.getB2BodyType();
+        if (b2BodyDef.type != motion.getB2BodyType())
+        {
+            b2BodyDef.type = motion.getB2BodyType();
+
+            if (b2Body != null)
+            {
+                // FIXME This is going to throw out joints, probably. Need to
+                // try to preserve them if possible...
+
+                destroyB2Body(getShapeField());
+                createB2Body(getShapeField());
+            }
+        }
     }
 
 
@@ -217,6 +236,25 @@ public abstract class Shape
         if (b2Body != null)
         {
             b2Body.setActive(isActive);
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets a value indicating whether or not the shape is awake.
+     *
+     * @return true if the shape is awake; false if it is asleep
+     */
+    public boolean isAwake()
+    {
+        if (b2Body != null)
+        {
+            return b2Body.isAwake();
+        }
+        else
+        {
+            return b2BodyDef.awake;
         }
     }
 
@@ -291,7 +329,9 @@ public abstract class Shape
     // ----------------------------------------------------------
     /**
      * Gets the coefficient of restitution, which controls the "bounciness" of
-     * the shape.
+     * the shape (or in more precise terms, the relationship between the
+     * velocity of the shape before and after a collision). See
+     * {@link #setRestitution(float)} for ways to interpret this value.
      *
      * @return the coefficient of restitution
      */
@@ -303,8 +343,57 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
+     * <p>
      * Sets the coefficient of restitution, which controls the "bounciness" of
-     * the shape.
+     * the shape (or in more precise terms, the relationship between the
+     * velocity of the shape before and after a collision).
+     * </p><p>
+     * A coefficient of restitution of 0 indicates that the object should
+     * effectively "stop" at the point of impact (that is, it will lose all
+     * velocity but may still remain in motion due to gravitational effects),
+     * while a coefficient of restitution of 1 indicates that the shape's
+     * velocity should have the same velocity after the impact as it did
+     * before. Coefficients of restitution greater than 1 are also possible; an
+     * example would be an object triggering an explosion upon impact and being
+     * blasted away.
+     * </p><p>
+     * The physics engine underlying Sofia Graphics does not support negative
+     * coefficients of restitution.
+     * </p>
+     *
+     * <h3>Details</h3>
+     * <p>
+     * Imagine that you have an object being dropped from a height of
+     * <em>H</em> and you want to compute the coefficient of restitution that
+     * will cause it to reach a height of <em>h</em> after it bounces. This can
+     * be computed using the following formula:
+     * </p><p>
+     * <img src="doc-files/setRestitution-height-ratio.png" style="vertical-align: middle"/>.
+     * </p><p>
+     * Similarly, if you have an object traveling at velocity <em>u</em> and
+     * you want it to have velocity <em>v</em> after the impact, you can
+     * compute the desired restitution with the formula:
+     * </p><p>
+     * <img src="doc-files/setRestitution-stationary-velocity-ratio.png" style="vertical-align: middle"/>.
+     * </p><p>
+     * When two objects in motion collide, the maximum coefficient of
+     * restitution of the two objects is used to compute the new velocities
+     * after impact. This coefficient is defined to be
+     * </p><p>
+     * <img src="doc-files/setRestitution-mobile-velocity-ratio.png" style="vertical-align: middle"/>.
+     * </p><p>
+     * Finally, the velocities of the objects after a collision can be computed
+     * as follows:
+     * </p><p>
+     * <img src="doc-files/setRestitution-velocity-a-after-impact.png" style="vertical-align: middle"/> and
+     * <img src="doc-files/setRestitution-velocity-b-after-impact.png" style="vertical-align: middle"/>,
+     * </p><p>
+     * where <em>v<sub>a</sub></em> and <em>v<sub>b</sub></em> are the
+     * velocities of the objects after impact, <em>u<sub>a</sub></em> and
+     * <em>u<sub>b</sub></em> are the velocities before impact, and
+     * <em>m<sub>a</sub></em> and <em>m<sub>b</sub></em> are the masses of the
+     * objects.
+     * </p>
      *
      * @param newRestitution the new coefficient of restitution
      */
@@ -312,9 +401,12 @@ public abstract class Shape
     {
         restitution = newRestitution;
 
-        for (Fixture fixture : b2Fixtures)
+        if (b2Body != null)
         {
-            fixture.setRestitution(restitution);
+            for (Fixture fixture : new FixtureIterator(b2Body))
+            {
+                fixture.setRestitution(restitution);
+            }
         }
     }
 
@@ -341,9 +433,12 @@ public abstract class Shape
     {
         friction = newFriction;
 
-        for (Fixture fixture : b2Fixtures)
+        if (b2Body != null)
         {
-            fixture.setFriction(friction);
+            for (Fixture fixture : new FixtureIterator(b2Body))
+            {
+                fixture.setFriction(friction);
+            }
         }
     }
 
@@ -372,9 +467,40 @@ public abstract class Shape
     {
         density = newDensity;
 
-        for (Fixture fixture : b2Fixtures)
+        if (b2Body != null)
         {
-            fixture.setDensity(density);
+            for (Fixture fixture : new FixtureIterator(b2Body))
+            {
+                fixture.setDensity(density);
+            }
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * <p>
+     * Gets the mass of this shape (which is the density of the shape
+     * multiplied by its surface area).
+     * </p><p>
+     * This method can only be called on shapes that are currently added to a
+     * {@link ShapeField}. If the shape is not in a field, this method will
+     * throw an {@code IllegalStateException}.
+     * </p>
+     *
+     * @return the mass of this shape
+     * @throws IllegalStateException if the shape is not currently in a field
+     */
+    public float getMass()
+    {
+        if (b2Body != null)
+        {
+            return b2Body.m_mass;
+        }
+        else
+        {
+            throw new IllegalStateException("getMass() can only be called on "
+                    + "shapes currently in a field.");
         }
     }
 
@@ -404,13 +530,13 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Gets a value indicating whether this shape is a "bullet." Bullets are
+     * Sets a value indicating whether this shape is a "bullet." Bullets are
      * very fast moving objects that require more precise contact/collision
      * handling than ordinary objects, and they require more processing power
      * as a result.
      *
-     * @return true if this shape uses more precise "bullet" contact/collision
-     *     handling, or false if it does not
+     * @param bullet true if this shape uses more precise "bullet"
+     *     contact/collision handling, or false if it does not
      */
     public void setBullet(boolean bullet)
     {
@@ -418,7 +544,49 @@ public abstract class Shape
 
         if (b2Body != null)
         {
-            b2Body.setBullet(true);
+            b2Body.setBullet(bullet);
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets a value indicating whether this shape's rotation is fixed -- that
+     * is, even under a physical load, the shape will never rotate. This is
+     * can be useful for characters in games.
+     *
+     * @return true if this shape has fixed rotation, or false if it is allowed
+     *     to rotate
+     */
+    public boolean isFixedRotation()
+    {
+        if (b2Body != null)
+        {
+            return b2Body.isFixedRotation();
+        }
+        else
+        {
+            return b2BodyDef.fixedRotation;
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets a value indicating whether this shape's rotation is fixed -- that
+     * is, even under a physical load, the shape will never rotate. This is
+     * can be useful for characters in games.
+     *
+     * @param fixedRotation true if this shape has fixed rotation, or false if
+     *     it is allowed to rotate
+     */
+    public void setFixedRotation(boolean fixedRotation)
+    {
+        b2BodyDef.fixedRotation = fixedRotation;
+
+        if (b2Body != null)
+        {
+            b2Body.setFixedRotation(fixedRotation);
         }
     }
 
@@ -468,6 +636,45 @@ public abstract class Shape
         if (b2Body != null)
         {
             b2Body.setAngularVelocity(radsPerSec);
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets the angular damping of the shape, which is used to reduce the
+     * angular velocity of the shape.
+     *
+     * @return the angular damping of the shape
+     */
+    public float getAngularDamping()
+    {
+        if (b2Body != null)
+        {
+            return b2Body.getAngularDamping();
+        }
+        else
+        {
+            return b2BodyDef.angularDamping;
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the angular damping of the shape, which is used to reduce the
+     * angular velocity of the shape. This can be a value between {@code 0.0f}
+     * (no damping) and {@link Float#POSITIVE_INFINITY} (full damping).
+     *
+     * @param newDamping the angular damping of the shape
+     */
+    public void setAngularDamping(float newDamping)
+    {
+        b2BodyDef.angularDamping = newDamping;
+
+        if (b2Body != null)
+        {
+            b2Body.setAngularDamping(newDamping);
         }
     }
 
@@ -536,6 +743,60 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
+     * Gets the linear damping of the shape, which is used to reduce the
+     * linear velocity of the shape.
+     *
+     * @return the linear damping of the shape
+     */
+    public float getLinearDamping()
+    {
+        if (b2Body != null)
+        {
+            return b2Body.getLinearDamping();
+        }
+        else
+        {
+            return b2BodyDef.linearDamping;
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the linear damping of the shape, which is used to reduce the
+     * linear velocity of the shape. This can be a value between {@code 0.0f}
+     * (no damping) and {@link Float#POSITIVE_INFINITY} (full damping).
+     *
+     * @param newDamping the linear damping of the shape
+     */
+    public void setLinearDamping(float newDamping)
+    {
+        b2BodyDef.linearDamping = newDamping;
+
+        if (b2Body != null)
+        {
+            b2Body.setLinearDamping(newDamping);
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * TODO document
+     *
+     * @param x the magnitude of the impulse in the horizontal direction
+     * @param y the magnitude of the impulse in the vertical direction
+     */
+    public void applyLinearImpulse(float x, float y)
+    {
+        // TODO assert/check that body exists
+
+        b2Body.applyLinearImpulse(new Vec2(x, y), b2Body.getWorldCenter());
+    }
+
+
+    // ----------------------------------------------------------
+    /**
      * <strong>This method is intended for internal use only, or by advanced
      * users subclassing one of the abstract shape types.</strong> Subclasses
      * must override this method to create the necessary fixtures for the body
@@ -558,13 +819,16 @@ public abstract class Shape
 
         if (body != null)
         {
-            Fixture current = body.getFixtureList();
-            while (current != null)
+            synchronized (body.m_world)
             {
-                Fixture next = current.getNext();
-                current.destroy();
+                Fixture current = body.m_fixtureList;
+                while (current != null)
+                {
+                    Fixture next = current.getNext();
+                    body.destroyFixture(current);
 
-                current = next;
+                    current = next;
+                }
             }
         }
     }
@@ -580,8 +844,11 @@ public abstract class Shape
     {
         if (b2Body != null)
         {
-            destroyFixtures();
-            createFixtures();
+            synchronized (b2Body.m_world)
+            {
+                destroyFixtures();
+                createFixtures();
+            }
         }
     }
 
@@ -652,7 +919,10 @@ public abstract class Shape
 
         if (b2Body != null)
         {
-            b2Body.setTransform(position, angle);
+            synchronized (b2Body.m_world)
+            {
+                b2Body.setTransform(position, angle);
+            }
         }
     }
 
@@ -678,7 +948,7 @@ public abstract class Shape
         fd.isSensor = sensor;
         fd.userData = this;
 
-        b2Fixtures.add(b2Body.createFixture(fd));
+        b2Body.createFixture(fd);
     }
 
 
@@ -694,11 +964,11 @@ public abstract class Shape
      */
     public void addOther(Shape newShape)
     {
-        ShapeParent parent = getShapeParent();
+        ShapeField field = getShapeField();
 
-        if (parent != null)
+        if (field != null)
         {
-            parent.add(newShape);
+            field.add(newShape);
         }
     }
 
@@ -709,11 +979,11 @@ public abstract class Shape
      */
     public void remove()
     {
-        ShapeParent parent = getShapeParent();
+        ShapeField field = getShapeField();
 
-        if (parent != null)
+        if (field != null)
         {
-            parent.remove(this);
+            field.remove(this);
         }
     }
 
@@ -726,11 +996,7 @@ public abstract class Shape
      *
      * @return The bounding rectangle of the shape.
      */
-    public RectF getBounds()
-    {
-        // FIXME
-        return null;
-    }
+    public abstract RectF getBounds();
 
 
     // ----------------------------------------------------------
@@ -741,10 +1007,7 @@ public abstract class Shape
      *
      * @param newBounds The new bounding rectangle of the shape.
      */
-    public void setBounds(RectF newBounds)
-    {
-        //FIXME
-    }
+    public abstract void setBounds(RectF newBounds);
 
 
     // ----------------------------------------------------------
@@ -940,6 +1203,20 @@ public abstract class Shape
 
 
     // ----------------------------------------------------------
+    public float getX()
+    {
+        return getPosition().x;
+    }
+
+
+    // ----------------------------------------------------------
+    public float getY()
+    {
+        return getPosition().y;
+    }
+
+
+    // ----------------------------------------------------------
     /**
      * Gets the x-coordinate of the anchor point of the shape's bounding
      * box (the top-left corner, by default).
@@ -948,9 +1225,9 @@ public abstract class Shape
      *         bounding box.
      * @see #setPositionAnchor(Anchor)
      */
-    /*public float getX()
+    public float getLeft()
     {
-        return getBounds().left + positionAnchor.x;
+        return getBounds().left;
     }
 
 
@@ -965,11 +1242,11 @@ public abstract class Shape
      *          bounding box.
      * @see #setPositionAnchor(Anchor)
      */
-    /*public void setX(float x)
+    public void setLeft(float x)
     {
-        getBounds().offsetTo(x - positionAnchor.x, getBounds().top);
-        notifyParentOfPositionChange();
-        conditionallyRelayout();
+        RectF bounds = getBounds();
+        bounds.offsetTo(x, bounds.top);
+        setBounds(bounds);
     }
 
 
@@ -982,9 +1259,9 @@ public abstract class Shape
      *         bounding box.
      * @see #setPositionAnchor(Anchor)
      */
-    /*public float getY()
+    public float getTop()
     {
-        return getBounds().top + positionAnchor.y;
+        return getBounds().top;
     }
 
 
@@ -999,11 +1276,11 @@ public abstract class Shape
      *          bounding box.
      * @see #setPositionAnchor(Anchor)
      */
-    /*public void setY(float y)
+    public void setTop(float y)
     {
-        getBounds().offsetTo(getBounds().left, y - positionAnchor.y);
-        notifyParentOfPositionChange();
-        conditionallyRelayout();
+        RectF bounds = getBounds();
+        bounds.offsetTo(bounds.left, y);
+        setBounds(bounds);
     }
 
 
@@ -1013,7 +1290,7 @@ public abstract class Shape
      *
      * @return The width of the shape.
      */
-    /*public float getWidth()
+    public float getWidth()
     {
         return getBounds().width();
     }
@@ -1025,7 +1302,7 @@ public abstract class Shape
      *
      * @return The height of the shape.
      */
-    /*public float getHeight()
+    public float getHeight()
     {
         return getBounds().height();
     }
@@ -1033,45 +1310,47 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Gets the origin (top-left corner) of the receiver. Be aware that the
+     * Gets the location of the centroid of the shape. Be aware that the
      * {@link PointF#x} and {@link PointF#y} fields of the returned point may
      * not be valid if layout of the shapes has not yet occurred.
      *
-     * @return A {@link PointF} object describing the origin of the shape.
+     * @return A {@link PointF} object describing the location of the shape.
      */
-    /*public PointF getPosition()
+    public PointF getPosition()
     {
-        return new PointF(
-            bounds.left + positionAnchor.x,
-            bounds.top + positionAnchor.y);
+        if (b2Body != null)
+        {
+            return Box2DUtils.vec2ToPointF(b2Body.getPosition());
+        }
+        else
+        {
+            return Box2DUtils.vec2ToPointF(b2BodyDef.position);
+        }
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Sets the origin (top-left corner) of the receiver.
+     * Sets the location of the centroid of the shape.
      *
-     * @param x the x-coordinate of the desired origin of the shape
-     * @param y the y-coordinate of the desired origin of the shape
+     * @param x the x-coordinate of the desired centroid of the shape
+     * @param y the y-coordinate of the desired centroid of the shape
      */
-    /*public void setPosition(float x, float y)
+    public void setPosition(float x, float y)
     {
-        bounds.offsetTo(
-            x - positionAnchor.x,
-            y - positionAnchor.y);
-        notifyParentOfPositionChange();
-        conditionallyRelayout();
+        updateTransform(x, y);
+        conditionallyRepaint();
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Sets the origin (top-left corner) of the receiver.
+     * Sets the location of the centroid of the shape.
      *
-     * @param position A {@link PointF} object describing the origin of the
+     * @param position A {@link PointF} object describing the centroid of the
      *                 shape.
      */
-    /*public void setPosition(PointF position)
+    public void setPosition(PointF position)
     {
         setPosition(position.x, position.y);
     }
@@ -1103,11 +1382,11 @@ public abstract class Shape
      * @param dx The number of pixels to move the shape horizontally.
      * @param dy The number of pixels to move the shape vertically.
      */
-    /*public void move(float dx, float dy)
+    public void moveBy(float dx, float dy)
     {
+        RectF bounds = getBounds();
         bounds.offset(dx, dy);
-        notifyParentOfPositionChange();
-        conditionallyRelayout();
+        setBounds(bounds);
     }
 
 
@@ -1228,36 +1507,21 @@ public abstract class Shape
     {
         zIndex = newZIndex;
 
-        if (parent != null)
+        if (shapeField != null)
         {
-            parent.onZIndexChanged(this);
+            shapeField.updateZIndex(this, newZIndex);
+        }
+        else
+        {
+            rawSetZIndex(newZIndex);
         }
     }
 
 
     // ----------------------------------------------------------
-    /**
-     * Sets the time that this shape was last added to its parent. Used
-     * internally to sort shapes when they have equal z-indices.
-     *
-     * @return the time that this shape was last added to its parent
-     */
-    /*package*/ final void updateTimeAddedToParent()
+    /*package*/ void rawSetZIndex(int newZIndex)
     {
-        timeAddedToParent = ADD_TO_PARENT_COUNTER++;
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Gets the time that this shape was last added to its parent. Used
-     * internally to sort shapes when they have equal z-indices.
-     *
-     * @return the time that this shape was last added to its parent
-     */
-    /*package*/ final long getTimeAddedToParent()
-    {
-        return timeAddedToParent;
+        zIndex = newZIndex;
     }
 
 
@@ -1270,19 +1534,20 @@ public abstract class Shape
      */
     public boolean isInFrontOf(Shape other)
     {
-        return parent != null && parent.isInFrontOf(this, other);
+        return shapeField != null && shapeField.isInFrontOf(this, other);
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Gets the parent of the receiver.
+     * Gets the {@link ShapeField} that contains this shape.
      *
-     * @return The parent of the receiver.
+     * @return The {@code ShapeField} that contains this shape, or null if the
+     *     shape is not in a field.
      */
-    public final ShapeParent getShapeParent()
+    public final ShapeField getShapeField()
     {
-        return parent;
+        return shapeField;
     }
 
 
@@ -1294,16 +1559,11 @@ public abstract class Shape
      */
     public final ShapeView getParentView()
     {
-        ShapeParent ancestor = getShapeParent();
+        ShapeField field = getShapeField();
 
-        while (ancestor != null)
+        if (field != null)
         {
-            if (ancestor instanceof ShapeView)
-            {
-                return (ShapeView) ancestor;
-            }
-
-            ancestor = ancestor.getShapeParent();
+            return field.getView();
         }
 
         return null;
@@ -1312,13 +1572,14 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Sets the parent of the receiver. Used internally.
+     * Sets the {@link ShapeField} that the receiver is located in. Used
+     * internally.
      *
-     * @param newParent The new parent.
+     * @param newShapeField The new {@code ShapeField}.
      */
-    /*package*/ final void setParent(ShapeParent newParent)
+    /*package*/ final void setShapeField(ShapeField newShapeField)
     {
-        this.parent = newParent;
+        this.shapeField = newShapeField;
     }
 
 
@@ -1342,6 +1603,12 @@ public abstract class Shape
      */
     public void setColor(Color newColor)
     {
+        if (newColor == null)
+        {
+            throw new IllegalArgumentException("Color cannot be null. To "
+                    + "remove the color from a shape, use Color.transparent.");
+        }
+
         this.color = newColor;
         conditionallyRepaint();
     }
@@ -1506,33 +1773,15 @@ public abstract class Shape
      * shape such as its position and size will cause the layout to be
      * recalculated automatically.
      */
-    protected void conditionallyRelayout()
-    {
-        ShapeView view = getParentView();
-
-        if (view != null)
-        {
-            view.conditionallyRelayout();
-        }
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Called to recalculate the layout of the shape on the screen. Most users
-     * will not need to call this method, because modifying a property of the
-     * shape such as its position and size will cause the layout to be
-     * recalculated automatically.
-     */
     protected void notifyParentOfPositionChange()
     {
         rotatedCorners = null;
         ShapeView view = getParentView();
 
-        if (view != null)
+        /*if (view != null)
         {
             view.onPositionChanged(this);
-        }
+        }*/
     }
 
 
@@ -2139,7 +2388,12 @@ public abstract class Shape
             }
 
             startTime = System.currentTimeMillis() + delay;
-            getShape().getParentView().getAnimationManager().enqueue(this);
+
+            ShapeView view = getShape().getParentView();
+            if (view != null && view.getAnimationManager() != null)
+            {
+                view.getAnimationManager().enqueue(this);
+            }
         }
 
 
@@ -2311,5 +2565,11 @@ public abstract class Shape
                 });
             }
         }
+    }
+
+
+    public static class Filter<FilterType extends Animator<FilterType>>
+    {
+
     }
 }

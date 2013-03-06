@@ -2,6 +2,7 @@ package sofia.graphics;
 
 import android.graphics.PointF;
 import android.graphics.RectF;
+import android.view.View;
 
 // -------------------------------------------------------------------------
 /**
@@ -260,22 +261,23 @@ public abstract class Anchor
      * @return A {@link PointF} object that represents the location of the
      *         receiver on the shape.
      */
-    public final RelativePoint of(Shape shape)
+    public final PointF of(Shape shape)
     {
-        return new RelativePoint(this, shape);
+        return getPoint(shape.getBounds());
     }
 
 
     // ----------------------------------------------------------
     /**
      * Gets a point that represents the location of the receiver on the
-     * specified canvas.
+     * specified view.
      *
      * @return A {@link PointF} object that represents the location of the
-     *         receiver on the shape canvas.
+     *         receiver on the shape view.
      */
-    public final RelativePoint ofView()
+    public final PointF of(View view)
     {
-        return new RelativePoint(this, null);
+        RectF bounds = new RectF(0, 0, view.getWidth(), view.getHeight());
+        return getPoint(bounds);
     }
 }
