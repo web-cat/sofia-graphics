@@ -1,7 +1,6 @@
 package sofia.graphics;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
@@ -10,88 +9,111 @@ import sofia.internal.Reversed;
 
 //-------------------------------------------------------------------------
 /**
+ * <p>
  * Represents a collection of {@link Shape} objects held in drawing order,
- * based on z-index and insertion time.
+ * based on z-index.
+ * </p><p>
+ * This class merely represents a generic, ordered collection of shapes; it
+ * provides no physical simulation or collision detection. Refer to the
+ * {@link ShapeField} class, which provides this added behavior.
+ * </p>
  *
  * @author  Tony Allevato
  * @author  Last changed by $Author$
  * @version $Revision$, $Date$
  */
-public class ShapeSet
-    implements Set<Shape>
+public class ShapeSet<ShapeType extends Shape>
+    implements Set<ShapeType>
 {
     //~ Fields ................................................................
 
-    private ShapeParent      parent;
-    private TreeSet<Shape>   treeSet;
-    private ZIndexComparator zorder;
+    private TreeSet<ShapeType> treeSet;
+    private ZIndexComparator   drawingOrder;
 
 
     //~ Constructors ..........................................................
 
     // ----------------------------------------------------------
     /**
-     * Create a new shape set that is not associated with a shape parent.
+     * Constructs a new, empty shape set, sorted by their drawing order.
      */
     public ShapeSet()
     {
-        this(null);
+        drawingOrder = new ZIndexComparator();
+        treeSet = new TreeSet<ShapeType>(drawingOrder);
+    }
+
+
+    //~ Public methods ........................................................
+
+    // ----------------------------------------------------------
+    /**
+     * Adds the specified shape to this set if it is not already present.
+     *
+     * @param shape the shape to be added to this set
+     * @return true if this set did not already contain the specified shape
+     */
+    public boolean add(ShapeType shape)
+    {
+        return treeSet.add(shape);
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Create a new shape set that notifies the specified shape parent when
-     * shapes are added to it or removed from it.
+     * Adds all of the shapes in the specified collection to this set if
+     * they're not already present.
      *
-     * @param parent The shape parent associated with this shape collection.
+     * @param collection the collection containing shapes to be added to this
+     *                   set
+     * @return true if the set changed as a result of this operation
      */
-    public ShapeSet(ShapeParent parent)
+    public boolean addAll(
+            Collection<? extends ShapeType> collection)
     {
-        this.parent = parent;
-
-        zorder  = new ZIndexComparator();
-        treeSet = new TreeSet<Shape>(zorder);
-    }
-
-
-    //~ Methods ...............................................................
-
-    // ----------------------------------------------------------
-    public boolean add(Shape shape)
-    {
-        shape.updateTimeAddedToParent();
-
-        boolean result = treeSet.add(shape);
-        parent.onShapesAdded(Collections.singleton(shape));
-        return result;
+        return treeSet.addAll(collection);
     }
 
 
     // ----------------------------------------------------------
-    public boolean addAll(Collection<? extends Shape> collection)
+    /**
+     * Gets the backmost shape in the shape set. This is the shape that has
+     * the lowest z-index, or if multiple shapes have the same z-index, the
+     * one that was added least recently to its field.
+     *
+     * @return the backmost shape in the set, or null if the set is empty
+     */
+    public ShapeType back()
     {
-        for (Shape shape : collection)
+        if (treeSet.size() > 0)
         {
-            shape.updateTimeAddedToParent();
+            return treeSet.first();
         }
-
-        boolean result = treeSet.addAll(collection);
-        parent.onShapesAdded(collection);
-        return result;
+        else
+        {
+            return null;
+        }
     }
 
 
     // ----------------------------------------------------------
+    /**
+     * Removes all of the shapes from this set. The set will be empty after
+     * this call returns.
+     */
     public void clear()
     {
-        TreeSet<Shape> oldTreeSet = treeSet;
-        treeSet = new TreeSet<Shape>(zorder);
-        parent.onShapesRemoved(oldTreeSet);
+        treeSet = new TreeSet<ShapeType>(drawingOrder);
     }
 
 
     // ----------------------------------------------------------
+    /**
+     * Returns true if this set contains the specified shape.
+     *
+     * @param object the shape whose presence in this set is to be tested
+     * @return true if this set contains the specified shape
+     */
     public boolean contains(Object object)
     {
         return treeSet.contains(object);
@@ -99,6 +121,15 @@ public class ShapeSet
 
 
     // ----------------------------------------------------------
+    /**
+     * Returns true if this set contains all of the shapes of the specified
+     * collection.
+     *
+     * @param collection the collection to be checked for containment in this
+     *                   set
+     * @return true if this set contains all of the shapes of the specified
+     *         collection
+     */
     public boolean containsAll(Collection<?> collection)
     {
         return treeSet.contains(collection);
@@ -106,16 +137,23 @@ public class ShapeSet
 
 
     // ----------------------------------------------------------
-    public boolean isEmpty()
+    /**
+     * Gets the frontmost shape in the shape set. This is the shape that has
+     * the highest z-index, or if multiple shapes have the same z-index, the
+     * one that was added most recently to its field.
+     *
+     * @return the frontmost shape in the set, or null if the set is empty
+     */
+    public ShapeType front()
     {
-        return treeSet.isEmpty();
-    }
-
-
-    // ----------------------------------------------------------
-    public Iterator<Shape> iterator()
-    {
-        return new WrappingIterator(treeSet.iterator(), true);
+        if (treeSet.size() > 0)
+        {
+            return treeSet.last();
+        }
+        else
+        {
+            return null;
+        }
     }
 
 
@@ -123,91 +161,95 @@ public class ShapeSet
     /**
      * Access an iterator that traverses the collection from "front" (top) to
      * "back" (bottom) in terms of drawing order.
+     *
      * @return An iterator representing this traversal order.
      */
-    public Iterator<Shape> frontToBackIterator()
+    public Iterator<ShapeType> frontToBackIterator()
     {
-        Shape[] array = new Shape[size()];
+        @SuppressWarnings("unchecked")
+        ShapeType[] array = (ShapeType[]) new Shape[size()];
         treeSet.toArray(array);
 
-        return new WrappingIterator(Reversed.reversed(array).iterator(), true);
+        return Reversed.reversed(array).iterator();
     }
 
 
     // ----------------------------------------------------------
+    /**
+     * Returns true if this set contains no shapes.
+     *
+     * @return true if this set contains no shapes
+     */
+    public boolean isEmpty()
+    {
+        return treeSet.isEmpty();
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Returns an iterator over the shapes in this set. The shapes are returned
+     * in order from farthest back (lowest z-index) to farthest forward
+     * (highest z-index).
+     *
+     * @return an iterator over the shapes in this set
+     */
+    public Iterator<ShapeType> iterator()
+    {
+        return treeSet.iterator();
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Removes the specified shape from this set if it is present.
+     *
+     * @param object the shape to be removed from this set, if present
+     * @return true if this set contained the specified shape
+     */
     public boolean remove(Object object)
     {
-        boolean result = treeSet.remove(object);
-
-        if (result)
-        {
-            parent.onShapesRemoved(Collections.singleton((Shape) object));
-        }
-
-        return result;
+        return treeSet.remove(object);
     }
 
 
     // ----------------------------------------------------------
+    /**
+     * Removes from this set all of its shapes that are contained in the
+     * specified collection.
+     *
+     * @param collection the collection containing shapes to be removed from
+     *                   this set
+     * @return true if this set changed as a result of the call
+     */
     public boolean removeAll(Collection<?> collection)
     {
-        boolean modified = false;
-
-        Iterator<Shape> it = iterator();
-        TreeSet<Shape> removedShapes = new TreeSet<Shape>(zorder);
-        while (it.hasNext())
-        {
-            Shape shape = it.next();
-
-            if (collection.contains(shape))
-            {
-                // Since we're using the wrapping iterator here, the parent
-                // will be unset properly.
-
-                removedShapes.add(shape);
-                it.remove();
-                modified = true;
-            }
-        }
-
-        if (modified)
-        {
-            parent.onShapesRemoved(removedShapes);
-        }
-
-        return modified;
+        return treeSet.removeAll(collection);
     }
 
 
     // ----------------------------------------------------------
+    /**
+     * Retains only the shapes in this set that are contained in the specified
+     * collection. In other words, removes from this set all of its shapes that
+     * are not contained in the specified collection.
+     *
+     * @param collection the collection containing shapes to be retained in
+     *                   this set
+     * @return true if this set changed as a result of the call
+     */
     public boolean retainAll(Collection<?> collection)
     {
-        boolean modified = false;
-
-        Iterator<Shape> it = iterator();
-        TreeSet<Shape> removedShapes = new TreeSet<Shape>(zorder);
-        while (it.hasNext())
-        {
-            Shape shape = it.next();
-
-            if (!collection.contains(shape))
-            {
-                removedShapes.add(shape);
-                it.remove();
-                modified = true;
-            }
-        }
-
-        if (modified)
-        {
-            parent.onShapesRemoved(removedShapes);
-        }
-
-        return modified;
+        return treeSet.retainAll(collection);
     }
 
 
     // ----------------------------------------------------------
+    /**
+     * Returns the number of shapes in this set (its cardinality).
+     *
+     * @return the number of shapes in this set (its cardinality)
+     */
     public int size()
     {
         return treeSet.size();
@@ -215,6 +257,13 @@ public class ShapeSet
 
 
     // ----------------------------------------------------------
+    /**
+     * Returns an array containing all of the shapes in this set. The shapes
+     * are returned in order from farthest back (lowest z-index) to farthest
+     * forward (highest z-index).
+     *
+     * @returns an array containing all the shapes in the set
+     */
     public Shape[] toArray()
     {
         Shape[] result = new Shape[treeSet.size()];
@@ -223,6 +272,29 @@ public class ShapeSet
 
 
     // ----------------------------------------------------------
+    /**
+     * <p>
+     * Returns an array containing all of the shapes in this set; the runtime
+     * type of the returned array is that of the specified array. If the set
+     * fits in the specified array, it is returned therein. Otherwise, a new
+     * array is allocated with the runtime type of the specified array and the
+     * size of this set.
+     * </p><p>
+     * If this set fits in the specified array with room to spare (i.e., the
+     * array has more elements than this set), the element in the array
+     * immediately following the end of the set is set to null. (This is useful
+     * in determining the length of this set only if the caller knows that this
+     * set does not contain any null elements.)
+     * </p><p>
+     * The shapes are returned in order from farthest back (lowest z-index) to
+     * farthest forward (highest z-index).
+     * </p>
+     *
+     * @param array the array into which the shapes of this set are to be
+     *              stored, if it is big enough; otherwise, a new array of the
+     *              same runtime type is allocated for this purpose.
+     * @returns an array containing all the shapes in the set
+     */
     public <T> T[] toArray(T[] array)
     {
         return treeSet.toArray(array);
@@ -231,99 +303,89 @@ public class ShapeSet
 
     // ----------------------------------------------------------
     /**
+     * Returns the hash code value for this set.
+     *
+     * @return the hash code value for this set
+     */
+    @Override
+    public int hashCode()
+    {
+        return treeSet.hashCode();
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Compares the specified object with this set for equality.
+     *
+     * @param other the object to be compared for equality with this set
+     * @return true if the specified object is equal to this set
+     */
+    @Override
+    public boolean equals(Object other)
+    {
+        if (other instanceof ShapeSet)
+        {
+            ShapeSet<?> otherSet = (ShapeSet<?>) other;
+            return treeSet.equals(otherSet.treeSet);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
      * Returns true if the left shape is drawn in front of (later than) the
      * shape on the right.
-     * @param left The shape to check.
-     * @param right The shape to check against.
-     * @return True if left is drawn above (later than) right.
+     *
+     * @param left  the shape to check
+     * @param right the shape to check against
+     * @return true if left is drawn above (later than) right
      */
     public boolean isInFrontOf(Shape left, Shape right)
     {
-        return zorder.compare(left, right) > 0;
+        return drawingOrder.compare(left, right) > 0;
     }
 
 
     // ----------------------------------------------------------
     /**
      * Get the shape order for this shape set.
-     * @return The current shape ordering, in the form of a comparator.
+     *
+     * @return The current shape ordering, in the form of a comparator
      */
     public ZIndexComparator getDrawingOrder()
     {
-        return zorder;
+        return drawingOrder;
     }
 
 
     // ----------------------------------------------------------
     /**
      * Change the shape order for this shape set.
-     * @param order The new ordering to use.
+     *
+     * @param order the new ordering to use
      */
     public void setDrawingOrder(ZIndexComparator order)
     {
-        TreeSet<Shape> newSet = new TreeSet<Shape>(order);
+        TreeSet<ShapeType> newSet = new TreeSet<ShapeType>(order);
         newSet.addAll(treeSet);
-        zorder = order;
+        drawingOrder = order;
         treeSet = newSet;
     }
 
 
     // ----------------------------------------------------------
-    /*package*/ void updateZIndex(Shape shape, int newZIndex)
+    /**
+     * Gets the {@code TreeSet} underlying this shape set.
+     *
+     * @return the {@code TreeSet} underlying this shape set
+     */
+    protected TreeSet<ShapeType> rawSet()
     {
-        treeSet.remove(shape);
-        shape.rawSetZIndex(newZIndex);
-        treeSet.add(shape);
-    }
-
-
-    //~ Inner classes .........................................................
-
-    // ----------------------------------------------------------
-    private class WrappingIterator implements Iterator<Shape>
-    {
-        private Iterator<Shape> iterator;
-        private boolean notifyParent;
-        private Shape lastShape;
-
-
-        // ----------------------------------------------------------
-        public WrappingIterator(Iterator<Shape> iterator, boolean notifyParent)
-        {
-            this.iterator = iterator;
-            this.notifyParent = notifyParent;
-        }
-
-
-        // ----------------------------------------------------------
-        public boolean hasNext()
-        {
-            return iterator.hasNext();
-        }
-
-
-        // ----------------------------------------------------------
-        public Shape next()
-        {
-            lastShape = iterator.next();
-            return lastShape;
-        }
-
-
-        // ----------------------------------------------------------
-        public void remove()
-        {
-            iterator.remove();
-
-            if (lastShape != null)
-            {
-                if (notifyParent)
-                {
-                    parent.onShapesRemoved(Collections.singleton(lastShape));
-                }
-
-                lastShape = null;
-            }
-        }
+        return treeSet;
     }
 }
