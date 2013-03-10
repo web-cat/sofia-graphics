@@ -44,6 +44,7 @@ public class ShapeField extends ShapeSet<Shape>
     private ShapeView view;
     private IdentityHashMap<Shape, Long> shapeAddTimes;
     private World b2World;
+    private int nonstaticShapeCount;
 
     private HashMap<Shape, Boolean> sleepRecipients;
     private EventDispatcher onSleep = new EventDispatcher("onSleep");
@@ -533,6 +534,13 @@ public class ShapeField extends ShapeSet<Shape>
 
 
     // ----------------------------------------------------------
+    /*package*/ boolean hasNonstaticShapes()
+    {
+        return nonstaticShapeCount > 0;
+    }
+
+
+    // ----------------------------------------------------------
     private void registerSleepRecipient(Shape shape)
     {
         try
@@ -555,6 +563,11 @@ public class ShapeField extends ShapeSet<Shape>
     {
         for (Shape shape : addedShapes)
         {
+            if (shape.getShapeMotion() != ShapeMotion.STATIC)
+            {
+                nonstaticShapeCount++;
+            }
+
             shape.createB2Body(this);
             registerSleepRecipient(shape);
         }
@@ -574,6 +587,11 @@ public class ShapeField extends ShapeSet<Shape>
             sleepRecipients.remove(shape);
             shape.destroyB2Body(this);
             shape.setShapeField(null);
+
+            if (shape.getShapeMotion() != ShapeMotion.STATIC)
+            {
+                nonstaticShapeCount--;
+            }
         }
 
         if (view != null)
@@ -584,7 +602,7 @@ public class ShapeField extends ShapeSet<Shape>
 
 
     // ----------------------------------------------------------
-    /*package*/ void runOrDefer(Runnable runnable)
+    /*package*/ void runOnceUnlocked(Runnable runnable)
     {
         World world = getB2World();
 

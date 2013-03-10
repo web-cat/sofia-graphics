@@ -19,6 +19,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.PointF;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 import android.util.AttributeSet;
@@ -449,9 +450,21 @@ public class ShapeView
     // ----------------------------------------------------------
     public void conditionallyRepaint()
     {
+        conditionallyRepaint(null);
+    }
+
+
+    // ----------------------------------------------------------
+    public void conditionallyRepaint(RectF bounds)
+    {
+        if (physicsThread == null && shapeField.hasNonstaticShapes())
+        {
+            startPhysicsSimulation();
+        }
+
         if (doesAutoRepaint())
         {
-            repaint();
+            repaint(bounds);
         }
     }
 
@@ -459,12 +472,19 @@ public class ShapeView
     // ----------------------------------------------------------
     public void repaint()
     {
+        repaint(null);
+    }
+
+
+    // ----------------------------------------------------------
+    public void repaint(RectF bounds)
+    {
         if (repaintThread == null)
         {
             return;
         }
 
-        repaintThread.repaintIfNecessary();
+        repaintThread.repaintIfNecessary(bounds);
     }
 
 
@@ -473,7 +493,7 @@ public class ShapeView
      * The real method that performs shape drawing in response to a
      * callback from the repainting thread.
      */
-    public void doRepaint()
+    private void doRepaint(RectF bounds)
     {
         if (surfaceCreated)
         {
@@ -498,7 +518,7 @@ public class ShapeView
                             canvas.drawColor(backgroundColor.toRawColor());
                         }
 
-                        drawContents(canvas);
+                        drawContents(canvas, bounds);
                     }
                 }
             }
@@ -518,7 +538,7 @@ public class ShapeView
      * Draw all of this view's shapes on the given canvas.
      * @param canvas The canvas to draw on.
      */
-    protected void drawContents(Canvas canvas)
+    protected void drawContents(Canvas canvas, RectF repaintBounds)
     {
         canvas.save();
         coordinateSystem.applyTransform(canvas);
@@ -571,7 +591,6 @@ public class ShapeView
     public boolean dispatchTouchEvent(MotionEvent e)
     {
         internalSetAutoRepaintForThread(false);
-
         boolean result = super.dispatchTouchEvent(e);
         internalSetAutoRepaintForThread(true);
         repaint();
@@ -757,12 +776,41 @@ public class ShapeView
     }
 
 
+    // ----------------------------------------------------------
+    /**
+     * Creates the physics thread and starts the simulation.
+     */
+    private void startPhysicsSimulation()
+    {
+        if (physicsThread == null)
+        {
+            physicsThread = new PhysicsThread();
+            physicsThread.start();
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Stops the physics simulation and destroys the thread.
+     */
+    private void stopPhysicsSimulation()
+    {
+        if (physicsThread != null)
+        {
+            physicsThread.cancel();
+            physicsThread = null;
+        }
+    }
+
+
     //~ Inner classes .........................................................
 
     // ----------------------------------------------------------
     private class RepaintThread extends Thread
     {
         private boolean running;
+        private RectF repaintBounds;
         private ArrayBlockingQueue<Boolean> queue;
 
 
@@ -776,7 +824,7 @@ public class ShapeView
         public synchronized void cancel()
         {
             running = false;
-            repaintIfNecessary();
+            repaintIfNecessary(null);
         }
 
 
@@ -786,8 +834,17 @@ public class ShapeView
         }
 
 
-        public void repaintIfNecessary()
+        public void repaintIfNecessary(RectF bounds)
         {
+            if (repaintBounds == null || bounds == null)
+            {
+                repaintBounds = bounds;
+            }
+            else if (repaintBounds != null && bounds != null)
+            {
+                repaintBounds.union(bounds);
+            }
+
             queue.offer(Boolean.TRUE);
         }
 
@@ -803,7 +860,8 @@ public class ShapeView
 
                     if (isRunning())
                     {
-                        doRepaint();
+                        doRepaint(repaintBounds);
+                        repaintBounds = null;
                     }
                 }
                 catch (InterruptedException e)
@@ -857,7 +915,6 @@ public class ShapeView
 
                 shapeField.runDeferredOperations();
                 shapeField.notifySleepRecipients();
-
                 repaint();
 
                 long timeUsed = SystemClock.elapsedRealtime() - startTime;
@@ -889,13 +946,16 @@ public class ShapeView
         {
             surfaceCreated = true;
 
-            physicsThread = new PhysicsThread();
             repaintThread = new RepaintThread();
             animationManager = new ShapeAnimationManager(ShapeView.this);
 
-            physicsThread.start();
             repaintThread.start();
             animationManager.start();
+
+            if (shapeField != null && shapeField.hasNonstaticShapes())
+            {
+                startPhysicsSimulation();
+            }
 
             autoRepaint = true;
             repaint();
@@ -907,8 +967,7 @@ public class ShapeView
         {
             surfaceCreated = false;
 
-            physicsThread.cancel();
-            physicsThread = null;
+            stopPhysicsSimulation();
 
             repaintThread.cancel();
             repaintThread = null;
