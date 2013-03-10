@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.jbox2d.collision.shapes.PolygonShape;
-
 import android.graphics.PointF;
 
 //-------------------------------------------------------------------------
