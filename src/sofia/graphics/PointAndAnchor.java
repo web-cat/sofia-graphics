@@ -1,8 +1,7 @@
 package sofia.graphics;
 
-import sofia.graphics.internal.GeometryUtils;
-import android.graphics.RectF;
 import android.graphics.PointF;
+import android.graphics.RectF;
 
 //-------------------------------------------------------------------------
 /**
@@ -13,7 +12,7 @@ import android.graphics.PointF;
  * @author  Tony Allevato
  * @version 2012.09.29
  */
-public class PointAndAnchor implements CopyableGeometry<PointAndAnchor>
+public class PointAndAnchor
 {
     //~ Fields ................................................................
 
@@ -47,7 +46,7 @@ public class PointAndAnchor implements CopyableGeometry<PointAndAnchor>
      */
     public PointAndAnchor(PointAndAnchor source)
     {
-        this.point = GeometryUtils.copy(source.point);
+        this.point = Geometry.clone(source.point);
         this.anchor = source.anchor;
     }
 

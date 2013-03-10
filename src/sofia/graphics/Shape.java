@@ -8,11 +8,9 @@ import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.BodyDef;
 import org.jbox2d.dynamics.Fixture;
 import org.jbox2d.dynamics.FixtureDef;
-import org.jbox2d.dynamics.World;
 
 import sofia.graphics.internal.Box2DUtils;
 import sofia.graphics.internal.FixtureIterator;
-import sofia.graphics.internal.GeometryUtils;
 import sofia.graphics.internal.animation.AlphaTransformer;
 import sofia.graphics.internal.animation.AnimationState;
 import sofia.graphics.internal.animation.BoundsTransformer;
@@ -91,7 +89,7 @@ public abstract class Shape
     // ----------------------------------------------------------
     /*package*/ void createB2Body(final ShapeField field)
     {
-        field.runOrDefer(new Runnable() {
+        field.runOnceUnlocked(new Runnable() {
             public void run()
             {
                 b2Body = field.getB2World().createBody(b2BodyDef);
@@ -107,7 +105,7 @@ public abstract class Shape
         // Preserve in the BodyDef any properties of the Body that change on
         // their own through the simulation.
 
-        field.runOrDefer(new Runnable() {
+        field.runOnceUnlocked(new Runnable() {
             public void run()
             {
                 b2BodyDef.angle = b2Body.getAngle();
@@ -1170,7 +1168,7 @@ public abstract class Shape
                 pivot = rotationPivot;
             }
 
-            GeometryUtils.resolveGeometry(pivot, this);
+            //GeometryUtils.resolveGeometry(pivot, this);
             // This places the pivot in absolute coords, but we want
             // to make it relative to the bounding box.
             pivot.offset(-getBounds().left, -getBounds().top);

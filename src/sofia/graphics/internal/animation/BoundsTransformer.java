@@ -2,7 +2,6 @@ package sofia.graphics.internal.animation;
 
 import sofia.graphics.PropertyTransformer;
 import sofia.graphics.Shape;
-import sofia.graphics.internal.GeometryUtils;
 import android.graphics.RectF;
 
 // ----------------------------------------------------------
@@ -25,7 +24,7 @@ public class BoundsTransformer implements PropertyTransformer
     public void onStart()
     {
         start = shape.getBounds();
-        GeometryUtils.resolveGeometry(end, shape);
+        //GeometryUtils.resolveGeometry(end, shape);
     }
 
 
