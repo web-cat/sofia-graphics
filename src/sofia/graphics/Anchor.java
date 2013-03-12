@@ -212,6 +212,39 @@ public abstract class Anchor
 
     // ----------------------------------------------------------
     /**
+     * Gets an anchor that represents a relative position inside a bounding
+     * box. The values {@code x} and {@code y} represent fractions of the width
+     * and height of the box, so 0.0 would represent the left/top and 1.0 would
+     * represent the right/bottom. Negative values and values greater than one
+     * would position the anchor outside the box.
+     *
+     * @param x the fraction of the width of the box
+     * @param y the fraction of the height of the box
+     * @return an {@code Anchor} representing the specified relative position
+     *     inside the bounding box
+     */
+    public static Anchor fractional(final float x, final float y)
+    {
+        return new Anchor()
+        {
+            @Override
+            public PointF getPoint(RectF bounds)
+            {
+                return new PointF(bounds.left + x * bounds.width(),
+                        bounds.right + y * bounds.height());
+            }
+
+            @Override
+            public String toString()
+            {
+                return "(fractional: " + x + ", " + y + ")";
+            }
+        };
+    }
+
+
+    // ----------------------------------------------------------
+    /**
      * Gets the point in the specified rectangle that the receiving anchor
      * represents.
      *
