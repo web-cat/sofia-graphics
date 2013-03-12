@@ -42,7 +42,6 @@ public class ShapeView
     //~ Fields ................................................................
 
     private ShapeField shapeField;
-    private boolean needsLayout;
     private boolean surfaceCreated;
     private Color backgroundColor;
     private List<Object> gestureDetectors;
@@ -936,7 +935,6 @@ public class ShapeView
         public void surfaceChanged(SurfaceHolder holder, int format,
             int width, int height)
         {
-            needsLayout = true;
             repaint();
         }
 

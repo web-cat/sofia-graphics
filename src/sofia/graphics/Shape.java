@@ -1103,7 +1103,6 @@ public abstract class Shape
      */
     public void setRotation(float newRotation)
     {
-        //setRotation(newRotation, Anchor.CENTER.of(this));
         float rads = (float) Math.toRadians(newRotation);
         updateTransform(rads);
     }
@@ -1141,7 +1140,6 @@ public abstract class Shape
         this.rotation += angleDelta;
 
         updateTransform();
-        notifyParentOfPositionChange();
         conditionallyRepaint();
     }
 
@@ -1201,6 +1199,11 @@ public abstract class Shape
 
 
     // ----------------------------------------------------------
+    /**
+     * Gets the x-coordinate of the centroid of the shape.
+     *
+     * @return the x-coordinate of the centroid of the shape
+     */
     public float getX()
     {
         return getPosition().x;
@@ -1208,6 +1211,11 @@ public abstract class Shape
 
 
     // ----------------------------------------------------------
+    /**
+     * Gets the y-coordinate of the centroid of the shape.
+     *
+     * @return the y-coordinate of the centroid of the shape
+     */
     public float getY()
     {
         return getPosition().y;
@@ -1244,7 +1252,7 @@ public abstract class Shape
     {
         RectF bounds = getBounds();
         bounds.offsetTo(x, bounds.top);
-        setBounds(bounds);
+        setPosition(bounds.centerX(), bounds.centerY());
     }
 
 
@@ -1278,7 +1286,7 @@ public abstract class Shape
     {
         RectF bounds = getBounds();
         bounds.offsetTo(bounds.left, y);
-        setBounds(bounds);
+        setPosition(bounds.centerX(), bounds.centerY());
     }
 
 
@@ -1356,18 +1364,25 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
+     * <p>
      * Sets the position of the receiver based on the specified point and
-     * anchor, leaving its size unchanged.
+     * anchor, leaving its size unchanged. This lets you set the position of
+     * a shape based on an anchor other than the center of the shape, for
+     * example:
+     * </p>
+     * <pre>
+     *     shape.setPosition(Anchor.BOTTOM_RIGHT.anchoredAt(50, 100));
+     * </pre>
      *
      * @param pointAndAnchor A {@link PointAndAnchor} object describing the
      *                       position of the shape.
      */
-    /*public void setPosition(PointAndAnchor pointAndAnchor)
+    public void setPosition(PointAndAnchor pointAndAnchor)
     {
-        bounds = pointAndAnchor.sized(bounds.width(), bounds.height());
-        bounds.offset(-positionAnchor.x, -positionAnchor.y);
-        notifyParentOfPositionChange();
-        conditionallyRelayout();
+        RectF bounds = getBounds();
+        RectF newBounds =
+                pointAndAnchor.sized(bounds.width(), bounds.height());
+        setPosition(newBounds.centerX(), newBounds.centerY());
     }
 
 
@@ -1463,18 +1478,6 @@ public abstract class Shape
     public boolean contains(PointF point)
     {
         return contains(point.x, point.y);
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Called when the bounds of the shape have been resolved. Subclasses may
-     * want to override this if they need to update their state when this
-     * occurs.
-     */
-    public void onBoundsResolved()
-    {
-        updateTransform();
     }
 
 
@@ -1766,25 +1769,6 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * Called to recalculate the layout of the shape on the screen. Most users
-     * will not need to call this method, because modifying a property of the
-     * shape such as its position and size will cause the layout to be
-     * recalculated automatically.
-     */
-    protected void notifyParentOfPositionChange()
-    {
-        rotatedCorners = null;
-        ShapeView view = getParentView();
-
-        /*if (view != null)
-        {
-            view.onPositionChanged(this);
-        }*/
-    }
-
-
-    // ----------------------------------------------------------
-    /**
      * Returns a human-readable string representation of the shape.
      *
      * @return A human-readable string representation of the shape.
@@ -1940,8 +1924,8 @@ public abstract class Shape
      *     shape.animate(500).color(Color.blue).alpha(128).play();</pre>
      *
      * In situations where the type of the class must be referenced directly
-     * (for example, when one is passed to an event handler like
-     * {@code onAnimationDone}), referring to the name of that type can be
+     * (for example, when one is passed to an event handler like an animation
+     * began/ended callback), referring to the name of that type can be
      * somewhat awkward due to the use of some Java generics tricks to ensure
      * that the methods chain properly. In nearly all cases, it is reasonable
      * to use a "?" wildcard in place of the generic parameter:
@@ -1949,6 +1933,14 @@ public abstract class Shape
      * <pre>
      *     Shape.Animator&lt;?&gt; anim = shape.animate(500).color(Color.blue);
      *     anim.play();</pre>
+     *
+     * or,
+     *
+     * <pre>
+     *     public void bounceAnimationEnded(Animator<?> animator)
+     *     {
+     *         ...
+     *     }</pre>
      *
      * @param <AnimatorType> the concrete type of the animator
      *
@@ -2067,7 +2059,8 @@ public abstract class Shape
          * identifier, preferably starting with a lowercase letter.
          * </p><p>
          * The name of the animation <strong>must be set</strong> in order to
-         * receive notifications about it.
+         * receive notifications about it. If you are not interested in
+         * receiving those notifications, you do not have to provide a name.
          * </p>
          *
          * @param newName the name of the animation
@@ -2093,7 +2086,8 @@ public abstract class Shape
         /**
          * Sets the timing function (interpolator) that determines how the
          * animation behaves during execution. A number of pre-written timing
-         * functions can be found as static methods in the {@link Timings} class.
+         * functions can be found as static methods in the {@link Timings}
+         * class.
          *
          * @param newInterpolator the timing function (interpolator) that
          *     determines how the animation behaves during execution
