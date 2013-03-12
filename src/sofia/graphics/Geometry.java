@@ -186,6 +186,157 @@ public class Geometry
 
     // ----------------------------------------------------------
     /**
+     * Computes the distance between a point and a line, measured perpendicular
+     * to that line.
+     *
+     * @param p the point whose distance from the line should be computed
+     * @param q1 a point along the line
+     * @param q2 another point along the line
+     * @return the perpendicular distance between the point and the line
+     */
+    public static float perpendicularDistance(
+            PointF p, PointF q1, PointF q2)
+    {
+        if (Math.abs(q1.x - q2.x) > 1e-8)
+        {
+            // The line isn't vertical, so we can use the usual formula.
+
+            float m = (q1.y - q2.y) / (q1.x - q2.x);
+            float b = q1.y - m * q1.x;
+            return (float) (Math.abs(m * p.x - p.y + b)
+                    / Math.sqrt(m * m + 1));
+        }
+        else
+        {
+            // The line is vertical, so just subtract the x-coordinates.
+
+            return Math.abs(p.x - q1.x);
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Returns true if point {@code p} lies to the left of the line formed by
+     * points {@code q1} and {@code q2}.
+     *
+     * @param p the point to test
+     * @param q1 the first point on the line
+     * @param q2 the second point on the line
+     * @return true if the point is to the left of the line
+     */
+    public static boolean isPointToLeft(PointF p, PointF q1, PointF q2)
+    {
+        return sArea2(q1, q2, p) > 0;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Returns true if point {@code p} lies to the left of or is on the line
+     * formed by points {@code q1} and {@code q2}.
+     *
+     * @param p the point to test
+     * @param q1 the first point on the line
+     * @param q2 the second point on the line
+     * @return true if the point is to the left of or on the line
+     */
+    public static boolean isPointToLeftOrOn(PointF p, PointF q1, PointF q2)
+    {
+        return sArea2(q1, q2, p) >= 0;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Returns true if point {@code p} lies to the right of the line formed by
+     * points {@code q1} and {@code q2}.
+     *
+     * @param p the point to test
+     * @param q1 the first point on the line
+     * @param q2 the second point on the line
+     * @return true if the point is to the right of the line
+     */
+    public static boolean isPointToRight(PointF p, PointF q1, PointF q2)
+    {
+        return sArea2(q1, q2, p) < 0;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Returns true if point {@code p} lies to the right of or is on the line
+     * formed by points {@code q1} and {@code q2}.
+     *
+     * @param p the point to test
+     * @param q1 the first point on the line
+     * @param q2 the second point on the line
+     * @return true if the point is to the right of or is on the line
+     */
+    public static boolean isPointToRightOrOn(PointF p, PointF q1, PointF q2)
+    {
+        return sArea2(q1, q2, p) <= 0;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Returns true if point {@code p} is on the line formed by points
+     * {@code q1} and {@code q2} (in other words, all three points are
+     * collinear).
+     *
+     * @param p the point to test
+     * @param q1 the first point on the line
+     * @param q2 the second point on the line
+     * @return true if the point is on the line
+     */
+    public static boolean isPointOn(PointF p, PointF q1, PointF q2)
+    {
+        return sArea2(q1, q2, p) == 0;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Computes the point of intersection between the lines (p1, p2) and
+     * (q1, q2). If the lines are parallel, then this method returns null.
+     *
+     * @param p1 a point on the first line
+     * @param p2 a point on the first line
+     * @param q1 a point on the second line
+     * @param q2 a point on the second line
+     * @return the point of intersection of the two lines, or null if they are
+     *     parallel
+     */
+    public static PointF intersection(
+            PointF p1, PointF p2, PointF q1, PointF q2)
+    {
+        PointF intersection = new PointF();
+        float a1, b1, c1, a2, b2, c2, det;
+        a1 = p2.y - p1.y;
+        b1 = p1.x - p2.x;
+        c1 = a1 * p1.x + b1 * p1.y;
+        a2 = q2.y - q1.y;
+        b2 = q1.x - q2.x;
+        c2 = a2 * q1.x + b2 * q1.y;
+        det = a1 * b2 - a2 * b1;
+
+        if (Math.abs(det) > 1e-8)
+        {
+            // The lines are not parallel.
+            intersection.x = (b2 * c1 - b1 * c2) / det;
+            intersection.y = (a1 * c2 - a2 * c1) / det;
+            return intersection;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
      * Converts a point to a string of the form "(x, y)". This method is
      * necessary because the Android {@code PointF} class does not override
      * {@code toString} in a meaningful way.
@@ -227,5 +378,25 @@ public class Geometry
         // Google, why is there a copy constructor for RectF but not for
         // PointF?
         return new PointF(point.x, point.y);
+    }
+
+
+    //~ Private methods .......................................................
+
+    // ----------------------------------------------------------
+    /**
+     * Gets twice the signed area of the triangle represented by the
+     * specified three points. (The result is not multiplied by 1/2 to get
+     * the true area since certain algorithms that use this only need the
+     * sign, saving an extra floating point operation.)
+     *
+     * @param a the first point on the triangle
+     * @param b the second point on the triangle
+     * @param c the third point on the triangle
+     * @return twice the signed area of the triangle
+     */
+    private static float sArea2(PointF a, PointF b, PointF c)
+    {
+        return (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y);
     }
 }
