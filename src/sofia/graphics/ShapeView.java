@@ -7,9 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 
-import org.jbox2d.callbacks.QueryCallback;
 import org.jbox2d.common.Vec2;
-import org.jbox2d.dynamics.Fixture;
 import org.jbox2d.dynamics.World;
 
 import sofia.graphics.internal.ShapeAnimationManager;
@@ -1125,65 +1123,6 @@ public class ShapeView
             }
 
             return xyTransformer;
-        }
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * This nested class creates the callback type to handle reporting
-     * the individual fixtures within a region a query is called on.
-     */
-    private static class LocationQueryCallback<ShapeType extends Shape>
-        implements QueryCallback
-    {
-        //~ Fields ............................................................
-
-        private Vec2 point;
-        private ShapeSet<ShapeType> foundShapes;
-        private Class<ShapeType> klass;
-
-
-        //~ Constructors ......................................................
-
-        // ------------------------------------------------------
-        public LocationQueryCallback(Class<ShapeType> cls, Vec2 point)
-        {
-            this.klass = cls;
-            this.point = point;
-            foundShapes = new ShapeSet<ShapeType>();
-        }
-
-
-        //~ Methods ...........................................................
-
-        // ------------------------------------------------------
-        /**
-         * This method controls what is to occur when a fixture is found,
-         * if it should be added to the list of fixtures.
-         *
-         * @return false terminates the query.
-         */
-        @SuppressWarnings("unchecked")
-        public boolean reportFixture(Fixture aFixture)
-        {
-            Shape shape = (Shape) aFixture.m_userData;
-            boolean inside = aFixture.testPoint(point);
-
-            if (inside && (klass == null
-                    || klass.isAssignableFrom(shape.getClass())))
-            {
-                foundShapes.add((ShapeType) shape);
-            }
-
-            return true;
-        }
-
-
-        // ----------------------------------------------------------
-        public ShapeSet<ShapeType> getFoundShapes()
-        {
-            return foundShapes;
         }
     }
 }
