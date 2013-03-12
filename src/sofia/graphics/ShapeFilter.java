@@ -18,7 +18,8 @@ import android.graphics.RectF;
 
 //-------------------------------------------------------------------------
 /**
- * TODO: document.
+ * A chainable filter that lets you search for shapes in a field based on a set
+ * of criteria.
  *
  * @param <ShapeType> The type of shapes that the filter will return.
  *

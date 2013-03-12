@@ -7,7 +7,8 @@ import sofia.graphics.internal.Box2DUtils;
 
 //-------------------------------------------------------------------------
 /**
- * TODO document
+ * A joint that forces the distance between two shapes to always remain
+ * constant, or within a certain amount of each other (like a spring-damper).
  *
  * @author  Tony Allevato
  * @author  Last changed by $Author: edwards $

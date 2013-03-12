@@ -7,7 +7,8 @@ import sofia.graphics.internal.Box2DUtils;
 
 //-------------------------------------------------------------------------
 /**
- * TODO document
+ * A joint that forces two shapes to share a common anchor point, allowing only
+ * the relative rotation between them to change.
  *
  * @author  Tony Allevato
  * @author  Last changed by $Author: edwards $
