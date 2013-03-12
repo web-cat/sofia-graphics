@@ -4,11 +4,16 @@ import org.jbox2d.dynamics.World;
 
 //-------------------------------------------------------------------------
 /**
- * TODO document
+ * The abstract base class for all Sofia classes representing JBox2D joints.
+ * Most users will not need to use this class directly, unless they want to
+ * implement a type of joint that Sofia does not yet support.
+ *
+ * @param <JointType> the type of the JBox2D joint that this class represents
+ * @param <JointDefType> the type of the JBox2D joint definition that this
+ *     class represents
  *
  * @author  Tony Allevato
- * @author  Last changed by $Author: edwards $
- * @version $Date: 2012/08/04 16:32 $
+ * @version 2013.03.12
  */
 public abstract class AbstractJoint<
     JointType extends org.jbox2d.dynamics.joints.Joint,
@@ -68,14 +73,28 @@ public abstract class AbstractJoint<
 
 
     // ----------------------------------------------------------
-    public boolean getCollideConnected()
+    /**
+     * Gets a value indicating whether the two shapes connected by this joint
+     * are allowed to collide.
+     *
+     * @return true if the two shapes connected by this joint are allowed to
+     *     collide, otherwise false
+     */
+    public boolean canShapesCollide()
     {
         return collideConnected;
     }
 
 
     // ----------------------------------------------------------
-    public void setCollideConnected(boolean collide)
+    /**
+     * Sets a value indicating whether the two shapes connected by this joint
+     * are allowed to collide.
+     *
+     * @param collide true if the two shapes connected by this joint are
+     *     allowed to collide, otherwise false
+     */
+    public void setCanShapesCollide(boolean collide)
     {
         collideConnected = collide;
     }
@@ -134,6 +153,11 @@ public abstract class AbstractJoint<
 
 
     // ----------------------------------------------------------
+    /**
+     * Gets the underlying JBox2D joint object. For advanced usage only.
+     *
+     * @return the underlying JBox2D joint object
+     */
     public JointType getB2Joint()
     {
         return b2Joint;
@@ -141,6 +165,12 @@ public abstract class AbstractJoint<
 
 
     // ----------------------------------------------------------
+    /**
+     * Gets the underlying JBox2D joint definition object. For advanced usage
+     * only.
+     *
+     * @return the underlying JBox2D joint definition object
+     */
     public JointDefType getB2JointDef()
     {
         if (b2JointDef == null)
@@ -172,6 +202,9 @@ public abstract class AbstractJoint<
     //~ Private methods .......................................................
 
     // ----------------------------------------------------------
+    /**
+     * Creates the actual joint.
+     */
     @SuppressWarnings("unchecked")
     private void createJoint()
     {

@@ -27,10 +27,22 @@ import android.graphics.RectF;
  */
 public class PolygonShape extends FillableShape
 {
+    //~ Fields ................................................................
+
     private Polygon polygon;
 
 
+    //~ Constructors ..........................................................
+
     // ----------------------------------------------------------
+    /**
+     * Initializes a new polygon shape from a list of vertices. The polygon is
+     * automatically closed.
+     *
+     * @param xyArray a list of floats that represent the x- and y-coordinates
+     *     of the vertices of the polygon
+     * @throws IllegalArgumentException if an odd number of floats is provided
+     */
     public PolygonShape(float... points)
     {
         this(new Polygon(points));
@@ -38,11 +50,18 @@ public class PolygonShape extends FillableShape
 
 
     // ----------------------------------------------------------
+    /**
+     * Initializes a new polygon shape that will draw the specified polygon.
+     *
+     * @param polygon the {@link Polygon} that this shape will draw
+     */
     public PolygonShape(Polygon polygon)
     {
         this.polygon = polygon;
     }
 
+
+    //~ Public methods ........................................................
 
     // ----------------------------------------------------------
     @Override
@@ -76,8 +95,7 @@ public class PolygonShape extends FillableShape
     @Override
     public void setBounds(RectF newBounds)
     {
-        // TODO Auto-generated method stub
-
+        throw new UnsupportedOperationException("Not yet implemented.");
     }
 
 

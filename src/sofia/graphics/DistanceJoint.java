@@ -72,24 +72,48 @@ public class DistanceJoint extends AbstractJoint<
     }
 
 
+    // ----------------------------------------------------------
+    /**
+     * TODO document
+     *
+     * @return
+     */
     public float getFrequency()
     {
         return frequency;
     }
 
 
+    // ----------------------------------------------------------
+    /**
+     * TODO document
+     *
+     * @return
+     */
     public void setFrequency(float newFrequency)
     {
         frequency = newFrequency;
     }
 
 
+    // ----------------------------------------------------------
+    /**
+     * TODO document
+     *
+     * @return
+     */
     public float getDampingRatio()
     {
         return dampingRatio;
     }
 
 
+    // ----------------------------------------------------------
+    /**
+     * TODO document
+     *
+     * @return
+     */
     public void setDampingRatio(float newDampingRatio)
     {
         dampingRatio = newDampingRatio;
