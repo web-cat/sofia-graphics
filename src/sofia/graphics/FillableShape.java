@@ -123,6 +123,11 @@ public abstract class FillableShape extends StrokedShape
 
 
     // ----------------------------------------------------------
+    /**
+     * Gets the image used to fill this shape.
+     *
+     * @return the image used to fill this shape
+     */
     public Image getImage()
     {
         return image;
@@ -130,6 +135,12 @@ public abstract class FillableShape extends StrokedShape
 
 
     // ----------------------------------------------------------
+    /**
+     * Sets the image used to fill this shape.
+     *
+     * @param newImage the image used to fill this shape, or null to remove the
+     *     image
+     */
     public void setImage(Image newImage)
     {
         image = newImage;
@@ -138,9 +149,34 @@ public abstract class FillableShape extends StrokedShape
 
 
     // ----------------------------------------------------------
+    /**
+     * Sets the image used to fill this shape.
+     *
+     * @param newImage the image used to fill this shape, or null to remove the
+     *     image
+     */
     public void setImage(String imageName)
     {
-        setImage(new Image(imageName));
+        if (imageName == null)
+        {
+            setImage((Image) null);
+        }
+        else
+        {
+            setImage(new Image(imageName));
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Removes the image used to fill this shape. This method exists for
+     * ease of use because trying to call {@code setImage(null)} would be
+     * ambiguous without an explicit cast.
+     */
+    public void removeImage()
+    {
+        setImage((Image) null);
     }
 
 
@@ -210,6 +246,12 @@ public abstract class FillableShape extends StrokedShape
 
 
     // ----------------------------------------------------------
+    /**
+     * Draws the image for this shape. Called by subclasses inside their
+     * {@link #draw(Canvas)} methods.
+     *
+     * @param canvas the {@code Canvas} to draw on
+     */
     protected void drawBitmap(Canvas canvas)
     {
         resolveBitmapIfNecessary();
@@ -252,6 +294,12 @@ public abstract class FillableShape extends StrokedShape
 
 
     // ----------------------------------------------------------
+    /**
+     * Gets a {@link Paint} object suitable for drawing the image for this
+     * shape.
+     *
+     * @return a {@code Paint} object
+     */
     protected Paint getImagePaint()
     {
         Paint paint = new Paint();
