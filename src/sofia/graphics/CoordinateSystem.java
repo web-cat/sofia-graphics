@@ -99,6 +99,9 @@ public class CoordinateSystem
     {
         origin = anchor;
 
+        updateTransform();
+        owner.repaint();
+
         return this;
     }
 
@@ -113,6 +116,9 @@ public class CoordinateSystem
     public CoordinateSystem flipX()
     {
         flipX = true;
+
+        updateTransform();
+        owner.repaint();
 
         return this;
     }
@@ -142,6 +148,9 @@ public class CoordinateSystem
     public CoordinateSystem flipY()
     {
         flipY = true;
+
+        updateTransform();
+        owner.repaint();
 
         return this;
     }
@@ -277,12 +286,12 @@ public class CoordinateSystem
                 xScale = viewWidth / width;
                 yScale = viewHeight / height;
             }
-            else if (isNaN(width))
+            else if (!isNaN(height))
             {
                 xScale = viewHeight / height;
                 yScale = viewHeight / height;
             }
-            else if (isNaN(height))
+            else if (!isNaN(width))
             {
                 xScale = viewWidth / width;
                 yScale = viewWidth / width;
