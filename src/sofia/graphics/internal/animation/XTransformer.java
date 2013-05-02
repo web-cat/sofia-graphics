@@ -1,5 +1,6 @@
 package sofia.graphics.internal.animation;
 
+import sofia.graphics.Geometry;
 import sofia.graphics.PropertyTransformer;
 import sofia.graphics.Shape;
 import android.graphics.PointF;
@@ -23,14 +24,14 @@ public class XTransformer implements PropertyTransformer
     // ----------------------------------------------------------
     public void onStart()
     {
-        //start = GeometryUtils.copy(shape.getPosition());
+        start = Geometry.clone(shape.getPosition());
     }
 
 
     // ----------------------------------------------------------
     public void transform(float t)
     {
-        /*shape.setPosition(new PointF(
-            start.x + (end - start.x) * t, start.y));*/
+        shape.setPosition(new PointF(
+            start.x + (end - start.x) * t, start.y));
     }
 }

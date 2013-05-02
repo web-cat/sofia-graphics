@@ -16,6 +16,7 @@ import sofia.internal.events.MotionEventDispatcher;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
@@ -40,6 +41,7 @@ public class ShapeView
     //~ Fields ................................................................
 
     private ShapeField shapeField;
+    //private CanvasDrawing drawing;
     private boolean surfaceCreated;
     private Color backgroundColor;
     private List<Object> gestureDetectors;
@@ -47,7 +49,7 @@ public class ShapeView
     private boolean autoRepaint;
     private Set<Long> threadsBlockingRepaint;
     private ShapeAnimationManager animationManager;
-    private RepaintThread repaintThread;
+    //private RepaintThread repaintThread;
     private PhysicsThread physicsThread;
     private CoordinateSystem coordinateSystem;
 
@@ -129,6 +131,7 @@ public class ShapeView
     // ----------------------------------------------------------
     private void init()
     {
+        //drawing = new CanvasDrawing();
         threadsBlockingRepaint = new HashSet<Long>();
 
         getHolder().addCallback(new SurfaceHolderCallback());
@@ -476,14 +479,18 @@ public class ShapeView
     // ----------------------------------------------------------
     public void repaint(RectF bounds)
     {
-        if (repaintThread == null)
+        /*if (repaintThread == null)
         {
             return;
         }
 
-        repaintThread.repaintIfNecessary(bounds);
+        repaintThread.repaintIfNecessary(bounds);*/
     }
 
+
+    private long lastFrameStart = 0;
+    private long framesThusFar = 0;
+    private double fps = 0;
 
     // ----------------------------------------------------------
     /**
@@ -512,10 +519,25 @@ public class ShapeView
                         }
                         else if (backgroundColor != null)
                         {
-                            canvas.drawColor(backgroundColor.toRawColor());
+                            canvas.drawColor(
+                                    backgroundColor.toRawColor());
                         }
 
                         drawContents(canvas, bounds);
+
+                        /*framesThusFar++;
+
+                        if (framesThusFar == 60)
+                        {
+                            long thisFrame = SystemClock.elapsedRealtime();
+                            double duration = thisFrame - lastFrameStart;
+                            lastFrameStart = thisFrame;
+                            fps = (framesThusFar / (duration / 1000));
+                            framesThusFar = 0;
+                        }
+
+                        String fpsStr = "fps: " + fps;
+                        canvas.drawText(fpsStr, 0, 12, new Paint());*/
                     }
                 }
             }
@@ -544,7 +566,8 @@ public class ShapeView
         {
             for (Shape shape : shapeField)
             {
-                if (shape.isVisible() && shape.getBounds() != null)
+                if (shape.getParentView() != null && shape.isVisible()
+                        && shape.getBounds() != null)
                 {
                     /*Matrix xform = shape.getTransform();
 
@@ -569,7 +592,7 @@ public class ShapeView
 
                     canvas.save();
 
-                    Vec2 pos = shape.getB2Body().getPosition();
+                    PointF pos = shape.getPosition();
                     canvas.rotate(shape.getRotation(), pos.x, pos.y);
 
                     shape.draw(canvas);
@@ -804,7 +827,47 @@ public class ShapeView
     //~ Inner classes .........................................................
 
     // ----------------------------------------------------------
-    private class RepaintThread extends Thread
+    /*private class CanvasDrawing implements Drawing
+    {
+        public Canvas canvas;
+
+
+        // ----------------------------------------------------------
+        @Override
+        public Context getContext()
+        {
+            return ShapeView.this.getContext();
+        }
+
+
+        // ----------------------------------------------------------
+        @Override
+        public Canvas getCanvas()
+        {
+            return canvas;
+        }
+
+
+        // ----------------------------------------------------------
+        @Override
+        public CoordinateSystem getCoordinateSystem()
+        {
+            return coordinateSystem;
+        }
+
+
+        // ----------------------------------------------------------
+        @Override
+        public int getFrameNumber()
+        {
+            // TODO
+            return 0;
+        }
+    }*/
+
+
+    // ----------------------------------------------------------
+    /*private class RepaintThread extends Thread
     {
         private boolean running;
         private RectF repaintBounds;
@@ -867,7 +930,7 @@ public class ShapeView
                 }
             }
         }
-    }
+    }*/
 
 
     // ----------------------------------------------------------
@@ -897,11 +960,13 @@ public class ShapeView
         @Override
         public void run()
         {
+            lastFrameStart = SystemClock.elapsedRealtime();
+
             while (isRunning())
             {
                 long startTime = SystemClock.elapsedRealtime();
 
-                int velIters = 3;
+                int velIters = 10;
                 int posIters = 8;
 
                 World world = shapeField.getB2World();
@@ -912,7 +977,7 @@ public class ShapeView
 
                 shapeField.runDeferredOperations();
                 shapeField.notifySleepRecipients();
-                repaint();
+                doRepaint(null);
 
                 long timeUsed = SystemClock.elapsedRealtime() - startTime;
                 long remainingTime = 1000 / FRAME_RATE - timeUsed;
@@ -942,13 +1007,13 @@ public class ShapeView
         {
             surfaceCreated = true;
 
-            repaintThread = new RepaintThread();
+            //repaintThread = new RepaintThread();
             animationManager = new ShapeAnimationManager(ShapeView.this);
 
-            repaintThread.start();
+            //repaintThread.start();
             animationManager.start();
 
-            if (shapeField != null && shapeField.hasNonstaticShapes())
+            //if (shapeField != null && shapeField.hasNonstaticShapes())
             {
                 startPhysicsSimulation();
             }
@@ -965,8 +1030,8 @@ public class ShapeView
 
             stopPhysicsSimulation();
 
-            repaintThread.cancel();
-            repaintThread = null;
+            //repaintThread.cancel();
+            //repaintThread = null;
 
             animationManager.cancel();
             animationManager = null;

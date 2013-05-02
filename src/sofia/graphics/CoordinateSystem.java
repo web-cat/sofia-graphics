@@ -38,6 +38,8 @@ public class CoordinateSystem
 
     private ShapeView owner;
     private Anchor origin;
+    private float offsetX;
+    private float offsetY;
     private boolean flipX;
     private boolean flipY;
     private float width;
@@ -98,6 +100,29 @@ public class CoordinateSystem
     public CoordinateSystem origin(Anchor anchor)
     {
         origin = anchor;
+
+        updateTransform();
+        owner.repaint();
+
+        return this;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Displaces the origin of the coordinate system by the specified number of
+     * horizontal and vertical units. This allows for easy viewport animation
+     * without having to move a large number of shapes around on the field.
+     *
+     * @param x the horizontal displacement
+     * @param y the vertical displacement
+     *
+     * @return this coordinate system, for chaining method calls
+     */
+    public CoordinateSystem offset(float x, float y)
+    {
+        offsetX = x;
+        offsetY = y;
 
         updateTransform();
         owner.repaint();
@@ -313,6 +338,7 @@ public class CoordinateSystem
             matrix.preScale(xScale, yScale);
             matrix.preTranslate(
                     originPt.x / xScale, originPt.y / yScale);
+            matrix.postTranslate(offsetX * xScale, offsetY * yScale);
         }
     }
 

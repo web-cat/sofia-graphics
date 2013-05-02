@@ -39,9 +39,9 @@ public class MotionStepTransformer implements PropertyTransformer
 
         float fraction = timeChange;
 
-        /*PointF point = shape.getPosition();
+        PointF point = shape.getPosition();
         step.step(fraction, point);
-        shape.setPosition(point);*/
+        shape.setPosition(point);
         lastT = t;
     }
 }

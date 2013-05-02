@@ -23,7 +23,7 @@ public class PositionTransformer implements PropertyTransformer
     // ----------------------------------------------------------
     public void onStart()
     {
-        //start = shape.getPosition();
+        start = shape.getPosition();
         //GeometryUtils.resolveGeometry(end, shape);
     }
 
@@ -31,8 +31,8 @@ public class PositionTransformer implements PropertyTransformer
     // ----------------------------------------------------------
     public void transform(float t)
     {
-        /*shape.setPosition(new PointF(
+        shape.setPosition(new PointF(
             start.x + (end.x - start.x) * t,
-            start.y + (end.y - start.y) * t));*/
+            start.y + (end.y - start.y) * t));
     }
 }
