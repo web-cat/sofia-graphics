@@ -41,7 +41,7 @@ public class ShapeView
     //~ Fields ................................................................
 
     private ShapeField shapeField;
-    //private CanvasDrawing drawing;
+    private CanvasDrawing drawing;
     private boolean surfaceCreated;
     private Color backgroundColor;
     private List<Object> gestureDetectors;
@@ -131,7 +131,7 @@ public class ShapeView
     // ----------------------------------------------------------
     private void init()
     {
-        //drawing = new CanvasDrawing();
+        drawing = new CanvasDrawing();
         threadsBlockingRepaint = new HashSet<Long>();
 
         getHolder().addCallback(new SurfaceHolderCallback());
@@ -501,13 +501,11 @@ public class ShapeView
     {
         if (surfaceCreated)
         {
-            Canvas canvas = null;
-
             try
             {
-                canvas = getHolder().lockCanvas(null);
+                drawing.canvas = getHolder().lockCanvas(null);
 
-                if (canvas != null)
+                if (drawing.canvas != null)
                 {
                     synchronized (getHolder())
                     {
@@ -515,17 +513,17 @@ public class ShapeView
 
                         if (background != null)
                         {
-                            background.draw(canvas);
+                            background.draw(drawing.canvas);
                         }
                         else if (backgroundColor != null)
                         {
-                            canvas.drawColor(
+                            drawing.canvas.drawColor(
                                     backgroundColor.toRawColor());
                         }
 
-                        drawContents(canvas, bounds);
+                        drawContents(bounds);
 
-                        /*framesThusFar++;
+                        framesThusFar++;
 
                         if (framesThusFar == 60)
                         {
@@ -537,15 +535,15 @@ public class ShapeView
                         }
 
                         String fpsStr = "fps: " + fps;
-                        canvas.drawText(fpsStr, 0, 12, new Paint());*/
+                        drawing.canvas.drawText(fpsStr, 0, 12, new Paint());
                     }
                 }
             }
             finally
             {
-                if (canvas != null)
+                if (drawing.canvas != null)
                 {
-                    getHolder().unlockCanvasAndPost(canvas);
+                    getHolder().unlockCanvasAndPost(drawing.canvas);
                 }
             }
         }
@@ -557,10 +555,10 @@ public class ShapeView
      * Draw all of this view's shapes on the given canvas.
      * @param canvas The canvas to draw on.
      */
-    protected void drawContents(Canvas canvas, RectF repaintBounds)
+    protected void drawContents(RectF repaintBounds)
     {
-        canvas.save();
-        coordinateSystem.applyTransform(canvas);
+        drawing.canvas.save();
+        coordinateSystem.applyTransform(drawing.canvas);
 
         synchronized (shapeField.getB2World())
         {
@@ -569,40 +567,19 @@ public class ShapeView
                 if (shape.getParentView() != null && shape.isVisible()
                         && shape.getBounds() != null)
                 {
-                    /*Matrix xform = shape.getTransform();
-
-                    if (xform != null)
-                    {
-                        // The xform is in bounding-box-relative coords.
-                        // Make a copy.
-                        xform = new Matrix(xform);
-
-                        // Before the rotation, translate the bounding box
-                        // to the origin.
-                        xform.preTranslate(
-                            -shape.getBounds().left, -shape.getBounds().top);
-
-                        // After the rotation, translate the bounding box
-                        // back into its original position.
-                        xform.postTranslate(
-                            shape.getBounds().left, shape.getBounds().top);
-                        canvas.save();
-                        canvas.concat(xform);
-                    }*/
-
-                    canvas.save();
+                    drawing.canvas.save();
 
                     PointF pos = shape.getPosition();
-                    canvas.rotate(shape.getRotation(), pos.x, pos.y);
+                    drawing.canvas.rotate(shape.getRotation(), pos.x, pos.y);
 
-                    shape.draw(canvas);
+                    shape.draw(drawing);
 
-                    canvas.restore();
+                    drawing.canvas.restore();
                 }
             }
         }
 
-        canvas.restore();
+        drawing.canvas.restore();
     }
 
 
@@ -827,7 +804,7 @@ public class ShapeView
     //~ Inner classes .........................................................
 
     // ----------------------------------------------------------
-    /*private class CanvasDrawing implements Drawing
+    private class CanvasDrawing implements Drawing
     {
         public Canvas canvas;
 
@@ -863,74 +840,7 @@ public class ShapeView
             // TODO
             return 0;
         }
-    }*/
-
-
-    // ----------------------------------------------------------
-    /*private class RepaintThread extends Thread
-    {
-        private boolean running;
-        private RectF repaintBounds;
-        private ArrayBlockingQueue<Boolean> queue;
-
-
-        public RepaintThread()
-        {
-            running = true;
-            queue = new ArrayBlockingQueue<Boolean>(1);
-        }
-
-
-        public synchronized void cancel()
-        {
-            running = false;
-            repaintIfNecessary(null);
-        }
-
-
-        public synchronized boolean isRunning()
-        {
-            return running;
-        }
-
-
-        public void repaintIfNecessary(RectF bounds)
-        {
-            if (repaintBounds == null || bounds == null)
-            {
-                repaintBounds = bounds;
-            }
-            else if (repaintBounds != null && bounds != null)
-            {
-                repaintBounds.union(bounds);
-            }
-
-            queue.offer(Boolean.TRUE);
-        }
-
-
-        @Override
-        public void run()
-        {
-            while (isRunning())
-            {
-                try
-                {
-                    queue.take();
-
-                    if (isRunning())
-                    {
-                        doRepaint(repaintBounds);
-                        repaintBounds = null;
-                    }
-                }
-                catch (InterruptedException e)
-                {
-                    // Do nothing.
-                }
-            }
-        }
-    }*/
+    }
 
 
     // ----------------------------------------------------------
@@ -975,6 +885,8 @@ public class ShapeView
                     world.step(1f / FRAME_RATE, velIters, posIters);
                 }
 
+                animationManager.step(startTime);
+
                 shapeField.runDeferredOperations();
                 shapeField.notifySleepRecipients();
                 doRepaint(null);
@@ -984,7 +896,7 @@ public class ShapeView
 
                 if (remainingTime > 0)
                 {
-                    SystemClock.sleep(remainingTime);
+                    //SystemClock.sleep(remainingTime);
                 }
             }
         }
@@ -1007,11 +919,8 @@ public class ShapeView
         {
             surfaceCreated = true;
 
-            //repaintThread = new RepaintThread();
             animationManager = new ShapeAnimationManager(ShapeView.this);
-
-            //repaintThread.start();
-            animationManager.start();
+            //animationManager.start();
 
             //if (shapeField != null && shapeField.hasNonstaticShapes())
             {
@@ -1029,9 +938,6 @@ public class ShapeView
             surfaceCreated = false;
 
             stopPhysicsSimulation();
-
-            //repaintThread.cancel();
-            //repaintThread = null;
 
             animationManager.cancel();
             animationManager = null;

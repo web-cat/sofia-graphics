@@ -122,21 +122,17 @@ public class RectangleShape extends FillableShape
 
     // ----------------------------------------------------------
     @Override
-    public void draw(Canvas canvas)
+    public void draw(Drawing drawing)
     {
         RectF bounds = getBounds();
+        Canvas canvas = drawing.getCanvas();
 
         if (isFilled())
         {
-            Paint fillPaint = getFillPaint();
-            canvas.drawRect(bounds, fillPaint);
+            getFill().fillRect(drawing, getAlpha(), bounds);
         }
 
-        if (getImage() != null)
-        {
-            drawBitmap(canvas);
-        }
-
+        // TODO abstract out stroke
         if (!getColor().isTransparent())
         {
             Paint paint = getPaint();

@@ -193,21 +193,17 @@ public class OvalShape extends FillableShape
 
     // ----------------------------------------------------------
     @Override
-    public void draw(Canvas canvas)
+    public void draw(Drawing drawing)
     {
         RectF bounds = getBounds();
+        Canvas canvas = drawing.getCanvas();
 
         if (isFilled())
         {
-            Paint fillPaint = getFillPaint();
-            canvas.drawOval(bounds, fillPaint);
+            getFill().fillOval(drawing, getAlpha(), bounds);
         }
 
-        if (getImage() != null)
-        {
-            drawBitmap(canvas);
-        }
-
+        // TODO abstract out stroke
         if (!getColor().isTransparent())
         {
             Paint paint = getPaint();

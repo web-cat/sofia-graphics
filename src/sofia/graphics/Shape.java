@@ -6,6 +6,7 @@ import java.util.Set;
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.BodyDef;
+import org.jbox2d.dynamics.BodyType;
 import org.jbox2d.dynamics.Fixture;
 import org.jbox2d.dynamics.FixtureDef;
 
@@ -27,6 +28,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
+import android.os.SystemClock;
 import android.view.animation.Interpolator;
 
 // -------------------------------------------------------------------------
@@ -50,6 +52,7 @@ public abstract class Shape
     private ShapeField shapeField;
     private boolean visible;
     private Color color;
+    private int alpha;
     private float rotation;
     private PointF rotationPivot;
     private PointF positionAnchor;
@@ -77,6 +80,7 @@ public abstract class Shape
         this.zIndex = 0;
         this.visible = true;
         this.color = Color.clear;
+        this.alpha = 255;
         this.positionAnchor = new PointF(0, 0);
 
         b2BodyDef = new BodyDef();
@@ -189,10 +193,17 @@ public abstract class Shape
                 // FIXME This is going to throw out joints, probably. Need to
                 // try to preserve them if possible...
 
-                destroyB2Body(getShapeField());
-                createB2Body(getShapeField());
+                recreateBody();
             }
         }
+    }
+
+
+    // ----------------------------------------------------------
+    private void recreateBody()
+    {
+        destroyB2Body(getShapeField());
+        createB2Body(getShapeField());
     }
 
 
@@ -908,9 +919,9 @@ public abstract class Shape
      * @param angle the rotation angle, in <strong>radians</strong> (note that
      *     this is different from the public interface, which uses degrees)
      */
-    protected void updateTransform(float x, float y, float angle)
+    protected void updateTransform(float x, float y, final float angle)
     {
-        Vec2 position = new Vec2(x, y);
+        final Vec2 position = new Vec2(x, y);
 
         b2BodyDef.position = position;
         b2BodyDef.angle = angle;
@@ -919,7 +930,21 @@ public abstract class Shape
         {
             synchronized (b2Body.m_world)
             {
-                b2Body.setTransform(position, angle);
+                shapeField.runOnceUnlocked(new Runnable() {
+                    @Override
+                    public void run()
+                    {
+                        b2Body.setTransform(position, angle);
+
+                        // Dynamic shapes get their physics screwed up if you call
+                        // setTransform, so we recreate the body and all fixtures if
+                        // it's not static.
+                        if (b2BodyDef.type != BodyType.STATIC)
+                        {
+                            recreateBody();
+                        }
+                    }
+                });
             }
         }
     }
@@ -1617,31 +1642,30 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * A convenience method that gets the alpha (opacity) component of the
-     * shape's color.
+     * Gets the shape's alpha (opacity).
      *
-     * @return The alpha component of the shape's color, where 0 means that
+     * @return The alpha component of the shape, where 0 means that
      *         the color is fully transparent and 255 means that it is fully
      *         opaque.
      */
     public int getAlpha()
     {
-        return getColor().alpha();
+        return alpha;
     }
 
 
     // ----------------------------------------------------------
     /**
-     * A convenience method that sets the alpha (opacity) component of the
-     * shape's color without changing the other color components.
+     * Sets the shape's alpha (opacity) to the specified value.
      *
-     * @param newAlpha The new alpha component of the shape's color, where 0
+     * @param newAlpha The new alpha component of the shape, where 0
      *                 means that the color is fully transparent and 255
      *                 means that it is fully opaque.
      */
     public void setAlpha(int newAlpha)
     {
-        setColor(getColor().withAlpha(newAlpha));
+        this.alpha = newAlpha;
+        conditionallyRepaint();
     }
 
 
@@ -1725,9 +1749,9 @@ public abstract class Shape
      * called as part of the repaint cycle by the {@link ShapeView} that
      * contains the shape.
      *
-     * @param canvas The {@link Canvas} on which to draw the shape.
+     * @param canvas The {@link Drawing} on which to draw the shape.
      */
-    public abstract void draw(Canvas canvas);
+    public abstract void draw(Drawing drawing);
 
 
     // ----------------------------------------------------------
@@ -1746,6 +1770,7 @@ public abstract class Shape
         Paint paint = new Paint();
         paint.setStyle(Paint.Style.STROKE);
         paint.setColor(getColor().toRawColor());
+        paint.setAlpha(alpha);
         return paint;
     }
 
@@ -1764,6 +1789,20 @@ public abstract class Shape
         {
             view.conditionallyRepaint();
         }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Gets a value indicating whether this shape can collide with the
+     * specified other shape, assuming both shapes are active.
+     *
+     * @param otherShape the other shape
+     * @return true if the shapes can collide, or false if they cannot
+     */
+    public boolean canCollideWith(Shape otherShape)
+    {
+        return true;
     }
 
 
@@ -2379,7 +2418,7 @@ public abstract class Shape
                 transformer.onStart();
             }
 
-            startTime = System.currentTimeMillis() + delay;
+            startTime = SystemClock.elapsedRealtime() + delay;
 
             ShapeView view = getShape().getParentView();
             if (view != null && view.getAnimationManager() != null)

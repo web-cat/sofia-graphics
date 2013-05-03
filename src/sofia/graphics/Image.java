@@ -1,5 +1,6 @@
 package sofia.graphics;
 
+import sofia.internal.MRUMap;
 import sofia.internal.JarResources;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -31,6 +32,15 @@ public class Image
     private boolean  scaleForDpi = true;
 
     private static Bitmap defaultImage;
+    private static MRUMap<String, Bitmap> bitmapCache =
+            new MRUMap<String, Bitmap>(256, 60 * 60 * 4,
+                    new MRUMap.Recycler<Bitmap>() {
+                        @Override
+                        public void recycle(Bitmap value)
+                        {
+                            value.recycle();
+                        }
+            });
 
 
     //~ Constructors ..........................................................
@@ -206,6 +216,23 @@ public class Image
      */
     public void resolveAgainstContext(Context context)
     {
+        boolean alreadyCached = false;
+
+        if (bitmap != null && bitmap.isRecycled())
+        {
+            bitmap = null;
+        }
+
+        if (bitmap == null)
+        {
+            bitmap = bitmapCache.get(fileName /*FIXME*/);
+
+            if (bitmap != null)
+            {
+                alreadyCached = true;
+            }
+        }
+
         if (bitmap == null)
         {
 //            System.out.println("Image.resolveAgainstContext(" + context + ")");
@@ -246,9 +273,11 @@ public class Image
                     bfo.inScaled = false;
                 }
                 // Default to generic logo
-                defaultImage = BitmapFactory.decodeResource(
+                defaultImage = Bitmap.createBitmap(
+                        16, 16, Bitmap.Config.ARGB_8888);
+                /*defaultImage = BitmapFactory.decodeResource(
                     context.getResources(),
-                    R.drawable.sofia_default_image, bfo);
+                    R.drawable.sofia_default_image, bfo);*/
 //                System.out.println("loading default image = " + bitmap);
             }
             bitmap = defaultImage;
@@ -263,6 +292,12 @@ public class Image
 //            System.out.println("target density = " +
 //                context.getResources().getDisplayMetrics().densityDpi);
 //        }
+
+        if (!alreadyCached && bitmap != null)
+        {
+            System.out.println("Putting " + fileName + " in cache");
+            bitmapCache.put(fileName /*FIXME*/, bitmap);
+        }
     }
 
 

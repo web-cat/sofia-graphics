@@ -20,10 +20,7 @@ public abstract class FillableShape extends StrokedShape
 {
     //~ Fields ................................................................
 
-    private Image image;
-    private boolean filled;
-    private Color fillColor;
-    private boolean fillColorSet;
+    private Fill fill;
 
 
     //~ Constructors ..........................................................
@@ -51,59 +48,68 @@ public abstract class FillableShape extends StrokedShape
     // ----------------------------------------------------------
     /**
      * Gets a value indicating whether the shape will be filled when it is
-     * drawn.
+     * drawn. In other words, this method returns true if {@link getFill()}
+     * returns non-null.
      *
      * @return true if the shape will be filled when it is drawn, or false if
      *     it will be drawn as an outline
      */
     public boolean isFilled()
     {
-        return filled;
+        return getFill() != null;
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Sets a value indicating whether the shape will be filled when it is
-     * drawn.
+     * Gets the {@link Fill} object used to fill the inside of this shape.
      *
-     * @param newFilled true if the shape will be filled when it is drawn,
-     *     or false to draw it as an outline
+     * @return the {@code Fill} object used to fill the inside of this shape
      */
-    public void setFilled(boolean newFilled)
+    public Fill getFill()
     {
-        this.filled = newFilled;
+        return fill;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the {@link Fill} object used to fill the inside of this shape.
+     *
+     * @param newFill the {@code Fill} object used to fill the inside of this
+     *     shape
+     */
+    public void setFill(Fill newFill)
+    {
+        fill = newFill;
         conditionallyRepaint();
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Gets the color used to fill the shape. This color can be set explicitly
-     * by calling {@link #setFillColor(Color)}; if it has not been set, then
-     * the shape's color as defined by {@link #getColor()} will be used to fill
-     * the shape.
+     * Gets the color used to fill the shape.
      *
      * @return the {@link Color} used to fill the shape
      */
     public Color getFillColor()
     {
-        if (fillColorSet)
+        if (fill instanceof ColorFill)
         {
-            return fillColor;
+            return ((ColorFill) fill).getColor();
         }
         else
         {
-            return getColor();
+            return null;
         }
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Sets the color used to fill the shape. If it has not been set, then the
-     * shape's color as defined by {@link #getColor()} will be used to fill the
-     * shape.
+     * Sets the color used to fill the shape. This is a convenience method that
+     * has the same behavior as calling {@link #setFill(Fill)} with a new
+     * {@link ColorFill}.
      *
      * @param newFillColor the {@link Color} to use to fill the shape
      */
@@ -111,14 +117,12 @@ public abstract class FillableShape extends StrokedShape
     {
         if (newFillColor == null)
         {
-            throw new IllegalArgumentException("Color cannot be null. To "
-                    + "remove the color from a shape, use Color.transparent.");
+            setFill(null);
         }
-
-
-        this.fillColor = newFillColor;
-        this.fillColorSet = true;
-        conditionallyRepaint();
+        else
+        {
+            setFill(new ColorFill(newFillColor));
+        }
     }
 
 
@@ -130,7 +134,14 @@ public abstract class FillableShape extends StrokedShape
      */
     public Image getImage()
     {
-        return image;
+        if (fill instanceof ImageFill)
+        {
+            return ((ImageFill) fill).getImage();
+        }
+        else
+        {
+            return null;
+        }
     }
 
 
@@ -143,8 +154,14 @@ public abstract class FillableShape extends StrokedShape
      */
     public void setImage(Image newImage)
     {
-        image = newImage;
-        conditionallyRepaint();
+        if (newImage == null)
+        {
+            setFill(null);
+        }
+        else
+        {
+            setFill(new ImageFill(newImage));
+        }
     }
 
 
@@ -198,7 +215,7 @@ public abstract class FillableShape extends StrokedShape
      *         the color is fully transparent and 255 means that it is fully
      *         opaque.
      */
-    @Override
+    /*@Override
     public int getAlpha()
     {
         // No behavioral change; only overridden to provide updated Javadoc.
@@ -216,11 +233,15 @@ public abstract class FillableShape extends StrokedShape
      *                 means that the color is fully transparent and 255
      *                 means that it is fully opaque.
      */
-    @Override
+    /*@Override
     public void setAlpha(int newAlpha)
     {
         super.setAlpha(newAlpha);
-        setFillColor(getFillColor().withAlpha(newAlpha));
+
+        if (isFilled())
+        {
+            fill.setAlpha(newAlpha);
+        }
     }
 
 
@@ -241,55 +262,8 @@ public abstract class FillableShape extends StrokedShape
         Paint paint = new Paint();
         paint.setStyle(Paint.Style.FILL_AND_STROKE);
         paint.setColor(getFillColor().toRawColor());
+        paint.setAlpha(getAlpha());
         return paint;
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Draws the image for this shape. Called by subclasses inside their
-     * {@link #draw(Canvas)} methods.
-     *
-     * @param canvas the {@code Canvas} to draw on
-     */
-    protected void drawBitmap(Canvas canvas)
-    {
-        resolveBitmapIfNecessary();
-
-        // In some cases, the bitmap may be missing...
-        Bitmap bm = image.asBitmap();
-        if (bm != null)
-        {
-            RectF sortedBounds = new RectF(getBounds());
-            sortedBounds.sort();
-
-            // If the coordinate system is flipped in either direction, we need
-            // to do another temporary flip to ensure that the images are drawn
-            // in their native orientation.
-
-            CoordinateSystem cs = getParentView().getCoordinateSystem();
-            boolean flipX = cs.isFlippedX();
-            boolean flipY = cs.isFlippedY();
-
-            if (flipX || flipY)
-            {
-                canvas.save();
-
-                Matrix matrix = new Matrix();
-                matrix.setScale(flipX ? -1 : 1, flipY ? -1 : 1);
-                matrix.postTranslate(
-                        flipX ? sortedBounds.left + sortedBounds.right : 0,
-                        flipY ? sortedBounds.top + sortedBounds.bottom : 0);
-                canvas.concat(matrix);
-            }
-
-            canvas.drawBitmap(bm, null, sortedBounds, getImagePaint());
-
-            if (flipX || flipY)
-            {
-                canvas.restore();
-            }
-        }
     }
 
 
@@ -300,24 +274,24 @@ public abstract class FillableShape extends StrokedShape
      *
      * @return a {@code Paint} object
      */
-    protected Paint getImagePaint()
+    /*protected Paint getImagePaint()
     {
         Paint paint = new Paint();
         paint.setAntiAlias(true);
         paint.setFilterBitmap(true);
         paint.setDither(true);
         return paint;
-    }
+    }*/
 
 
     // ----------------------------------------------------------
-    private void resolveBitmapIfNecessary()
+    /*private void resolveBitmapIfNecessary()
     {
         if (image != null && image.asBitmap() == null)
         {
             image.resolveAgainstContext(getParentView().getContext());
         }
-    }
+    }*/
 
 
     //~ Animation support classes .............................................

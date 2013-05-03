@@ -377,10 +377,12 @@ public class TextShape extends Shape
 
     // ----------------------------------------------------------
     @Override
-    public void draw(Canvas canvas)
+    public void draw(Drawing drawing)
     {
         if (text != null)
         {
+            Canvas canvas = drawing.getCanvas();
+
             Paint paint = getPaint();
             canvas.drawText(text,
                 getBounds().left, getBounds().top - getAscent(), paint);

@@ -20,7 +20,7 @@ public class ShapeAnimationManager
 
     private ShapeView view;
     private boolean running;
-    private Object animatorToken = new Object();
+    //private Object animatorToken = new Object();
 
     private ConcurrentLinkedQueue<Shape.Animator<?>> animators =
         new ConcurrentLinkedQueue<Shape.Animator<?>>();
@@ -44,10 +44,10 @@ public class ShapeAnimationManager
     {
         running = false;
 
-        synchronized (animatorToken)
+        /*synchronized (animatorToken)
         {
             animatorToken.notify();
-        }
+        }*/
     }
 
 
@@ -59,7 +59,7 @@ public class ShapeAnimationManager
 
 
     // ----------------------------------------------------------
-    public void enqueue(Shape.Animator<?> animator)
+    public synchronized void enqueue(Shape.Animator<?> animator)
     {
         if (isTestingMode())
         {
@@ -80,9 +80,33 @@ public class ShapeAnimationManager
             currentAnimators.put(shape, animator);
             animators.offer(animator);
 
-            synchronized (animatorToken)
+            /*synchronized (animatorToken)
             {
                 animatorToken.notify();
+            }*/
+        }
+    }
+
+
+    public synchronized void step(long toTime)
+    {
+        Iterator<Shape.Animator<?>> it = animators.iterator();
+
+        while (it.hasNext())
+        {
+            Shape.Animator<?> animator = it.next();
+            Shape shape = animator.getShape();
+
+            boolean ended = animator.advanceTo(toTime);
+
+            if (ended)
+            {
+                it.remove();
+
+                if (currentAnimators.get(shape) == animator)
+                {
+                    currentAnimators.remove(shape);
+                }
             }
         }
     }
@@ -101,13 +125,13 @@ public class ShapeAnimationManager
 
 
     // ----------------------------------------------------------
-    public void start()
+    /*public void start()
     {
         if (!isTestingMode())
         {
             new ProductionThread().start();
         }
-    }
+    }*/
 
 
     // ----------------------------------------------------------
@@ -121,7 +145,7 @@ public class ShapeAnimationManager
 
 
     // ----------------------------------------------------------
-    private class ProductionThread extends Thread
+    /*private class ProductionThread extends Thread
     {
         // ----------------------------------------------------------
         @Override
@@ -157,7 +181,7 @@ public class ShapeAnimationManager
                         }
                     }
 
-                    view.repaint();
+                    //view.repaint();
 
                     long end = System.currentTimeMillis();
                     long length = end - start;
@@ -186,7 +210,7 @@ public class ShapeAnimationManager
 
 
     // ----------------------------------------------------------
-    private void waitForSignal()
+    /*private void waitForSignal()
     {
         synchronized (animatorToken)
         {
@@ -202,5 +226,5 @@ public class ShapeAnimationManager
                 }
             }
         }
-    }
+    }*/
 }

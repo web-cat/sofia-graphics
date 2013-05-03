@@ -136,8 +136,9 @@ public class LineShape extends StrokedShape
 
     // ----------------------------------------------------------
     @Override
-    public void draw(Canvas canvas)
+    public void draw(Drawing drawing)
     {
+        Canvas canvas = drawing.getCanvas();
         Paint paint = getPaint();
         RectF bounds = getBounds();
 

@@ -4,6 +4,8 @@ import java.util.Iterator;
 
 import org.jbox2d.callbacks.QueryCallback;
 import org.jbox2d.collision.AABB;
+import org.jbox2d.collision.RayCastInput;
+import org.jbox2d.collision.RayCastOutput;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
 import org.jbox2d.common.Transform;
@@ -12,6 +14,7 @@ import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.Fixture;
 import org.jbox2d.dynamics.World;
 
+import sofia.graphics.internal.Box2DUtils;
 import sofia.graphics.internal.FixtureIterator;
 import android.graphics.PointF;
 import android.graphics.RectF;
@@ -677,6 +680,78 @@ public abstract class ShapeFilter<ShapeType extends Shape>
                         for (Fixture fixture : new FixtureIterator(body))
                         {
                             if (fixture.testPoint(vec))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+
+                    return false;
+                }
+            };
+        }
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Restrict this filter to only match shapes that occupy the specified
+     * point.
+     *
+     * @param point the point to test
+     * @return a new filter with the given restriction
+     */
+    public ShapeFilter<ShapeType> throughLine(
+            float x1, float y1, float x2, float y2)
+    {
+        return throughLine(new PointF(x1, y1), new PointF(x2, y2));
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Restrict this filter to only match shapes that occupy the specified
+     * point.
+     *
+     * @param point the point to test
+     * @return a new filter with the given restriction
+     */
+    public ShapeFilter<ShapeType> throughLine(
+            final PointF start, final PointF end)
+    {
+        if (start == null || end == null)
+        {
+            return this;
+        }
+        else
+        {
+            return new ShapeFilter<ShapeType>(this,
+                    "through line \"(" + Geometry.toString(start) + ")-("
+                    + Geometry.toString(end) + ")")
+            {
+                @Override
+                protected RectF thisQueryBounds()
+                {
+                    return new RectF(start.x, start.y, end.x, end.y);
+                }
+
+                @Override
+                protected boolean thisFilterAccepts(ShapeType shape)
+                {
+                    Body body = shape.getB2Body();
+
+                    if (body != null)
+                    {
+                        RayCastInput input = new RayCastInput();
+                        Box2DUtils.pointFToVec2(start, input.p1);
+                        Box2DUtils.pointFToVec2(end, input.p2);
+                        input.maxFraction = 1;
+
+                        RayCastOutput output = new RayCastOutput();
+
+                        for (Fixture fixture : new FixtureIterator(body))
+                        {
+                            if (fixture.raycast(output, input, 0))
                             {
                                 return true;
                             }

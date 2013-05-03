@@ -5,7 +5,6 @@ import org.jbox2d.common.Vec2;
 import sofia.graphics.internal.Box2DUtils;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.RectF;
 
@@ -36,8 +35,21 @@ public class PolygonShape extends FillableShape
 
     // ----------------------------------------------------------
     /**
+     * <p>
      * Initializes a new polygon shape from a list of vertices. The polygon is
      * automatically closed.
+     * </p><p>
+     * This method processes the coordinates passed in so that the position of
+     * the shape is set to the centroid of the polygon. This means that the
+     * underlying {@link Polygon} object that gets created will have different
+     * points than those passed in here. The reason for this is so that
+     * polygon shapes can be created easily at arbitrary locations on the
+     * screen, but that still behave properly when rotated about their origin.
+     * If you need a polygon that is intentionally positioned in such a way
+     * that its centroid is not (0, 0) in its local coordinate space, then you
+     * should use the {@link PolygonShape#PolygonShape(Polygon)} constructor
+     * directly.
+     * </p>
      *
      * @param xyArray a list of floats that represent the x- and y-coordinates
      *     of the vertices of the polygon
@@ -46,6 +58,7 @@ public class PolygonShape extends FillableShape
     public PolygonShape(float... points)
     {
         this(new Polygon(points));
+        setPosition(polygon.centroid());
     }
 
 
@@ -67,27 +80,11 @@ public class PolygonShape extends FillableShape
     @Override
     public RectF getBounds()
     {
-        float minX = Float.MAX_VALUE;
-        float minY = Float.MAX_VALUE;
-        float maxX = Float.MIN_VALUE;
-        float maxY = Float.MIN_VALUE;
-
-        for (int i = 0; i < polygon.size(); i++)
-        {
-            PointF pt = polygon.get(i);
-            if (pt.x < minX) minX = pt.x;
-            if (pt.y < minY) minY = pt.y;
-            if (pt.x > maxX) maxX = pt.x;
-            if (pt.y > maxY) maxY = pt.y;
-        }
-
+        RectF bounds = polygon.getBounds();
         PointF origin = getPosition();
-        minX += origin.x;
-        minY += origin.y;
-        maxX += origin.x;
-        maxY += origin.y;
 
-        return new RectF(minX, minY, maxX, maxY);
+        bounds.offset(origin.x, origin.y);
+        return bounds;
     }
 
 
@@ -101,34 +98,22 @@ public class PolygonShape extends FillableShape
 
     // ----------------------------------------------------------
     @Override
-    public void draw(Canvas canvas)
+    public void draw(Drawing drawing)
     {
         PointF origin = getPosition();
-
-        Path path = new Path();
-
-        for (int i = 0; i < polygon.size(); i++)
-        {
-            PointF pt = polygon.get(i);
-            if (i == 0)
-            {
-                path.moveTo(origin.x + pt.x, origin.y + pt.y);
-            }
-            else
-            {
-                path.lineTo(origin.x + pt.x, origin.y + pt.y);
-            }
-        }
-
-        path.close();
+        Canvas canvas = drawing.getCanvas();
 
         if (isFilled())
         {
-            canvas.drawPath(path, getFillPaint());
+            getFill().fillPolygon(drawing, getAlpha(), polygon, origin);
         }
 
-        Paint paint = getPaint();
-        canvas.drawPath(path, paint);
+        // TODO factor out stroke
+        if (!getColor().isTransparent())
+        {
+            Paint paint = getPaint();
+            //canvas.drawPath(path, paint);
+        }
     }
 
 

@@ -8,6 +8,7 @@ import sofia.graphics.internal.BayazitDecomposer;
 import sofia.graphics.internal.DouglasPeuckerReducer;
 
 import android.graphics.PointF;
+import android.graphics.RectF;
 
 //-------------------------------------------------------------------------
 /**
@@ -30,6 +31,7 @@ public class Polygon implements Iterable<PointF>
     // the polygon changes.
     private List<Polygon> cachedDecomposition;
     private PointF cachedCentroid;
+    private RectF cachedBounds;
 
 
     //~ Constructors ..........................................................
@@ -56,6 +58,7 @@ public class Polygon implements Iterable<PointF>
     public Polygon(float... xyArray)
     {
         points = floatArrayToPointList(xyArray);
+        recenter();
     }
 
 
@@ -214,6 +217,32 @@ public class Polygon implements Iterable<PointF>
 
 
     // ----------------------------------------------------------
+    public RectF getBounds()
+    {
+        if (cachedBounds == null)
+        {
+            float minX = Float.MAX_VALUE;
+            float minY = Float.MAX_VALUE;
+            float maxX = Float.MIN_VALUE;
+            float maxY = Float.MIN_VALUE;
+
+            for (int i = 0; i < size(); i++)
+            {
+                PointF pt = get(i);
+                if (pt.x < minX) minX = pt.x;
+                if (pt.y < minY) minY = pt.y;
+                if (pt.x > maxX) maxX = pt.x;
+                if (pt.y > maxY) maxY = pt.y;
+            }
+
+            cachedBounds = new RectF(minX, minY, maxX, maxY);
+        }
+
+        return new RectF(cachedBounds);
+    }
+
+
+    // ----------------------------------------------------------
     /**
      * Gets an iterator that can be used to iterate over the vertices in the
      * polygon.
@@ -224,6 +253,23 @@ public class Polygon implements Iterable<PointF>
     public Iterator<PointF> iterator()
     {
         return new VertexIterator(points.iterator());
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Recenters this polygon such that its centroid becomes (0, 0) in its
+     * local coordinate space.
+     */
+    public void recenter()
+    {
+        PointF center = centroid();
+
+        for (PointF point : points)
+        {
+            point.x -= center.x;
+            point.y -= center.y;
+        }
     }
 
 
@@ -307,6 +353,7 @@ public class Polygon implements Iterable<PointF>
     {
         cachedDecomposition = null;
         cachedCentroid = null;
+        cachedBounds = null;
     }
 
 
