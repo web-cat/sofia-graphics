@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
+	<classpathentry exported="true" kind="lib" path="/jbox2d-2.2.1.1/jbox2d-library/target/jbox2d-library-2.2.1.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Users/Dunhili/Documents/School/GTA/CS 2114/Files/slf4j-1.7.5/slf4j-api-1.7.5.jar"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
-	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	<classpathentry kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
+	<classpathentry kind="lib" path="C:/Users/Dunhili/Documents/School/GTA/CS 2114/Files/svg-android-1.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Dunhili/Desktop/Jeroo/+libs/android.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

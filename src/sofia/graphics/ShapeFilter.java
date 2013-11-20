@@ -382,7 +382,7 @@ public abstract class ShapeFilter<ShapeType extends Shape>
                 if (body != null)
                 {
                     CircleShape boundsShape = new CircleShape();
-                    boundsShape.setRadius(radius);
+                    //boundsShape.setRadius(radius);
                     Transform boundsTransform = new Transform();
                     boundsTransform.set(new Vec2(x, y), 0);
 

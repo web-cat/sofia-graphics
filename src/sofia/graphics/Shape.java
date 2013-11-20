@@ -296,7 +296,6 @@ public abstract class Shape
         recreateFixtures();
     }
 
-
     // ----------------------------------------------------------
     /**
      * Gets the gravity scaling factory for this shape.
@@ -1246,6 +1245,28 @@ public abstract class Shape
         return getPosition().y;
     }
 
+    /**
+     * Sets the x-coordinate of the centroid of the shape.
+     *
+     * @param the x-coordinate of the centroid of the shape
+     */
+    public void setX(float x)
+    {
+        getPosition().x = x;
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the y-coordinate of the centroid of the shape.
+     *
+     * @param y the y-coordinate of the centroid of the shape
+     */
+    public void setY(float y)
+    {
+        getPosition().y = y;
+    }
+
 
     // ----------------------------------------------------------
     /**
@@ -1749,7 +1770,7 @@ public abstract class Shape
      * called as part of the repaint cycle by the {@link ShapeView} that
      * contains the shape.
      *
-     * @param canvas The {@link Drawing} on which to draw the shape.
+     * @param drawing The {@link Drawing} on which to draw the shape.
      */
     public abstract void draw(Drawing drawing);
 

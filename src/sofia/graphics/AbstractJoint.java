@@ -146,7 +146,9 @@ public abstract class AbstractJoint<
     {
         if (b2Joint != null)
         {
-            b2Joint.m_bodyA.m_world.destroyJoint(b2Joint);
+            org.jbox2d.dynamics.joints.Joint.destroy(b2Joint);
+            //b2Joint.m_edgeA.joint.destroy(b2Joint);    //my change
+            //b2Joint.m_bodyA.m_world.destroyJoint(b2Joint);
             b2Joint = null;
         }
     }

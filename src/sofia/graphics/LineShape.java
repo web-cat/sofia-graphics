@@ -1,6 +1,5 @@
 package sofia.graphics;
 
-import org.jbox2d.collision.shapes.EdgeShape;
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.Body;
 
@@ -197,12 +196,12 @@ public class LineShape extends StrokedShape
     @Override
     protected void createFixtures()
     {
-        PointF mid = Geometry.midpoint(startPoint, endPoint);
+        /*PointF mid = Geometry.midpoint(startPoint, endPoint);
 
         EdgeShape edge = new EdgeShape();
         edge.set(new Vec2(startPoint.x - mid.x, startPoint.y - mid.y),
                 new Vec2(endPoint.x - mid.x, endPoint.y - mid.y));
 
-        addFixtureForShape(edge);
+        addFixtureForShape(edge);*/
     }
 }

@@ -192,8 +192,8 @@ public class DirectionalPad extends RectangleShape
         // We don't want to allow touches if they're too close to the center,
         // since the angle would be harder to compute.
 
-        float distance = Geometry.distanceBetween(x0, y0, tx, ty);
-        /*if (distance < getWidth() / 8)
+        /*float distance = Geometry.distanceBetween(x0, y0, tx, ty);
+        if (distance < getWidth() / 8)
         {
             return;
         }*/

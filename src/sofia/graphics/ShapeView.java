@@ -6,10 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
-
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.World;
-
 import sofia.graphics.internal.ShapeAnimationManager;
 import sofia.internal.events.EventDispatcher;
 import sofia.internal.events.MotionEventDispatcher;
@@ -27,61 +25,68 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-//-------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 /**
  * Represents a view containing drawn {@link Shape} objects.
  *
- * @author  Tony Allevato
- * @author  Last changed by $Author: edwards $
+ * @author Tony Allevato
+ * @author Last changed by $Author: edwards $
  * @version $Date: 2012/08/04 16:32 $
  */
 public class ShapeView
     extends SurfaceView
 {
-    //~ Fields ................................................................
+    // ~ Fields ................................................................
 
-    private ShapeField shapeField;
-    private CanvasDrawing drawing;
-    private boolean surfaceCreated;
-    private Color backgroundColor;
-    private List<Object> gestureDetectors;
-    //private GestureDetector gestureDetector;
-    private boolean autoRepaint;
-    private Set<Long> threadsBlockingRepaint;
-    private ShapeAnimationManager animationManager;
-    //private RepaintThread repaintThread;
-    private PhysicsThread physicsThread;
-    private CoordinateSystem coordinateSystem;
+    private ShapeField                                      shapeField;
+    private CanvasDrawing                                   drawing;
+    private boolean                                         surfaceCreated;
+    private Color                                           backgroundColor;
+    private List<Object>                                    gestureDetectors;
+    // private GestureDetector gestureDetector;
+    private boolean                                         autoRepaint;
+    private Set<Long>                                       threadsBlockingRepaint;
+    private ShapeAnimationManager                           animationManager;
+    // private RepaintThread repaintThread;
+    private PhysicsThread                                   physicsThread;
+    private CoordinateSystem                                coordinateSystem;
 
     // Event forwarders
     private final CoordinateRespectingMotionEventDispatcher onTouchDown =
-            new CoordinateRespectingMotionEventDispatcher("onTouchDown");
-    private final CoordinateRespectingMotionEventDispatcher onTouchMove =
-            new CoordinateRespectingMotionEventDispatcher("onTouchMove");
+        new CoordinateRespectingMotionEventDispatcher("onTouchDown");
+
+    private final CoordinateRespectingMotionEventDispatcher onTouchMove  =
+        new CoordinateRespectingMotionEventDispatcher("onTouchMove");
+
     private final CoordinateRespectingMotionEventDispatcher onTouchUp =
-            new CoordinateRespectingMotionEventDispatcher("onTouchUp");
+        new CoordinateRespectingMotionEventDispatcher("onTouchUp");
+
     private static final EventDispatcher onKeyDown =
-            new EventDispatcher("onKeyDown");
+        new EventDispatcher("onKeyDown");
 
     private static final EventDispatcher onScaleGesture =
-            new EventDispatcher("onScaleGesture");
+        new EventDispatcher("onScaleGesture");
+
     private static final EventDispatcher onRotateGestureBegin =
-            new EventDispatcher("onRotateGestureBegin");
+        new EventDispatcher("onRotateGestureBegin");
+
     private static final EventDispatcher onRotateGesture =
-            new EventDispatcher("onRotateGesture");
+        new EventDispatcher("onRotateGesture");
+
     private static final EventDispatcher onFlingGesture =
-            new EventDispatcher("onFlingGesture");
+        new EventDispatcher("onFlingGesture");
 
-    private Shape shapeBeingDragged;
+    private Shape                                           shapeBeingDragged;
 
 
-    //~ Constructors ..........................................................
+    // ~ Constructors ..........................................................
 
     // ----------------------------------------------------------
     /**
      * Creates a new ShapeView.
      *
-     * @param context This view's context.
+     * @param context
+     *            This view's context.
      */
     public ShapeView(Context context)
     {
@@ -94,8 +99,10 @@ public class ShapeView
     /**
      * Creates a new ShapeView.
      *
-     * @param context This view's context.
-     * @param attrs   This view's attributes.
+     * @param context
+     *            This view's context.
+     * @param attrs
+     *            This view's attributes.
      */
     public ShapeView(Context context, AttributeSet attrs)
     {
@@ -108,9 +115,12 @@ public class ShapeView
     /**
      * Creates a new ShapeView.
      *
-     * @param context  This view's context.
-     * @param attrs    This view's attributes.
-     * @param defStyle This view's default style.
+     * @param context
+     *            This view's context.
+     * @param attrs
+     *            This view's attributes.
+     * @param defStyle
+     *            This view's default style.
      */
     public ShapeView(Context context, AttributeSet attrs, int defStyle)
     {
@@ -119,7 +129,7 @@ public class ShapeView
     }
 
 
-    //~ Methods ...............................................................
+    // ~ Methods ...............................................................
 
     // ----------------------------------------------------------
     public CoordinateSystem getCoordinateSystem()
@@ -136,19 +146,18 @@ public class ShapeView
 
         getHolder().addCallback(new SurfaceHolderCallback());
 
-        TypedArray array = getContext().getTheme().obtainStyledAttributes(
-            new int[] {
-                android.R.attr.colorBackground,
-                android.R.attr.textColorPrimary,
-            });
+        TypedArray array =
+            getContext().getTheme().obtainStyledAttributes(
+                new int[] { android.R.attr.colorBackground,
+                    android.R.attr.textColorPrimary, });
 
-        backgroundColor = Color.fromRawColor(
-                array.getColor(0, android.graphics.Color.BLACK));
+        backgroundColor =
+            Color.fromRawColor(array.getColor(0, android.graphics.Color.BLACK));
         array.recycle();
 
         shapeField = new ShapeField();
         shapeField.setView(this);
-//        gestureDetector = new GestureDetector(new ShapeGestureListener());
+// gestureDetector = new GestureDetector(new ShapeGestureListener());
 
         gestureDetectors = new ArrayList<Object>();
         coordinateSystem = new CoordinateSystem(this);
@@ -162,8 +171,8 @@ public class ShapeView
      * Gets the gravity of the physical world represented by this shape view.
      *
      * @return a {@code PointF} object whose x and y components are the
-     *     horizontal and vertical acceleration due to gravity (in units/sec^2)
-     *     of the physical world represented by this shape view
+     *         horizontal and vertical acceleration due to gravity (in
+     *         units/sec^2) of the physical world represented by this shape view
      */
     public PointF getGravity()
     {
@@ -175,9 +184,10 @@ public class ShapeView
     /**
      * Sets the gravity of the physical world represented by this shape view.
      *
-     * @param gravity a {@code PointF} whose x and y components are the
-     *     horizontal and vertical acceleration due to gravity (in units/sec^2)
-     *     of the physical world represented by this shape view
+     * @param gravity
+     *            a {@code PointF} whose x and y components are the horizontal
+     *            and vertical acceleration due to gravity (in units/sec^2) of
+     *            the physical world represented by this shape view
      */
     public void setGravity(PointF gravity)
     {
@@ -189,10 +199,10 @@ public class ShapeView
     /**
      * Sets the gravity of the physical world represented by this shape view.
      *
-     * @param xGravity the horizontal acceleration due to gravity (in
-     *     units/sec^2)
-     * @param yGravity the vertical acceleration due to gravity (in
-     *     units/sec^2)
+     * @param xGravity
+     *            the horizontal acceleration due to gravity (in units/sec^2)
+     * @param yGravity
+     *            the vertical acceleration due to gravity (in units/sec^2)
      */
     public void setGravity(float xGravity, float yGravity)
     {
@@ -203,8 +213,9 @@ public class ShapeView
     // ----------------------------------------------------------
     /**
      * Does this view automatically repaint, or is an explicit call needed?
-     * @return True if this view automatically repaints when contained
-     *         shapes are modified.
+     *
+     * @return True if this view automatically repaints when contained shapes
+     *         are modified.
      * @see #setAutoRepaint(boolean)
      */
     public synchronized boolean doesAutoRepaint()
@@ -216,8 +227,10 @@ public class ShapeView
     // ----------------------------------------------------------
     /**
      * Tell this view to automatically repaint when Shapes change (or not).
-     * @param value Whether or not this view should automatically repaint
-     *              when shapes change.
+     *
+     * @param value
+     *            Whether or not this view should automatically repaint when
+     *            shapes change.
      */
     public synchronized void setAutoRepaint(boolean value)
     {
@@ -228,8 +241,10 @@ public class ShapeView
     // ----------------------------------------------------------
     /**
      * Used internally to temporarily disable repainting.
-     * @param value Says whether the current thread is restoring auto-painting
-     *              or disabling auto-painting.
+     *
+     * @param value
+     *            Says whether the current thread is restoring auto-painting or
+     *            disabling auto-painting.
      */
     public synchronized void internalSetAutoRepaintForThread(boolean value)
     {
@@ -249,6 +264,7 @@ public class ShapeView
     // ----------------------------------------------------------
     /**
      * Get the animation manager for this view.
+     *
      * @return This view's animation manager.
      */
     public ShapeAnimationManager getAnimationManager()
@@ -274,18 +290,18 @@ public class ShapeView
     /**
      * Sets the {@link ShapeField} that the view is currently displaying and
      * simulating. When developing games or simulations that involve multiple
-     * "levels" or other complex multiple shape layouts, this method can be
-     * used to quickly and easily swap out the entire set of shapes used by the
-     * view.
+     * "levels" or other complex multiple shape layouts, this method can be used
+     * to quickly and easily swap out the entire set of shapes used by the view.
      *
-     * @param newField the {@link ShapeField} to be used by the view
+     * @param newField
+     *            the {@link ShapeField} to be used by the view
      */
     public void setShapeField(ShapeField newField)
     {
         if (newField == null)
         {
             throw new IllegalArgumentException("A ShapeView cannot have a "
-                    + "null ShapeField.");
+                + "null ShapeField.");
         }
 
         shapeField = newField;
@@ -300,7 +316,7 @@ public class ShapeView
      * {@code getShapeField().getShapes()}.
      *
      * @return a filter that can be used to find shapes that match certain
-     *     criteria
+     *         criteria
      */
     public ShapeFilter<Shape> getShapes()
     {
@@ -308,25 +324,69 @@ public class ShapeView
     }
 
 
+    /**
+     * Get all the shapes of the specified type in this view.
+     *
+     * @param cls
+     *            Class of objects to look for (passing 'null' will find all
+     *            objects).
+     * @param <MyShape>
+     *            The type of shape to look for, as specified in the cls
+     *            parameter.
+     * @return List of all the shapes of the specified type (or any of its
+     *         subtypes) in the view.
+     */
+    public <MyShape extends Shape> Set<MyShape> getShapes(Class<MyShape> cls)
+    {
+        if (cls == null)
+        {
+            @SuppressWarnings("unchecked")
+            Set<MyShape> result = (Set<MyShape>)getShapes();
+            return result;
+        }
+
+        synchronized (shapeField)
+        {
+            Set<MyShape> result =
+                new java.util.TreeSet<MyShape>(shapeField.getDrawingOrder());
+            for (Shape shape : getShapes())
+            {
+                if (cls.isInstance(shape))
+                {
+                    result.add(cls.cast(shape));
+                }
+            }
+            return result;
+        }
+    }
+
     // ----------------------------------------------------------
     /**
      * Returns all objects with the logical location within the specified
-     * circle. In other words an object A is within the range of an object B
-     * if the distance between the center of the two objects is less than r.
+     * circle. In other words an object A is within the range of an object B if
+     * the distance between the center of the two objects is less than r.
      *
-     * @param x Center of the circle.
-     * @param y Center of the circle.
-     * @param r Radius of the circle.
-     * @param cls Class of objects to look for (null or Object.class will find
+     * @param x
+     *            Center of the circle.
+     * @param y
+     *            Center of the circle.
+     * @param r
+     *            Radius of the circle.
+     * @param cls
+     *            Class of objects to look for (null or Object.class will find
      *            all classes).
-     * @param <MyShape> The type of shape to look for, as specified
-     *                  in the cls parameter.
+     * @param <MyShape>
+     *            The type of shape to look for, as specified in the cls
+     *            parameter.
      * @return A set of shapes that lie within the given circle.
      */
     public <MyShape extends Shape> Set<MyShape> getShapesInRange(
-        float x, float y, float r, Class<MyShape> cls)
+        float x,
+        float y,
+        float r,
+        Class<MyShape> cls)
     {
-        return null; //collisionChecker.getObjectsInRange(x, y, r, cls);
+        return null; // collisionChecker.getObjectsInRange(x, y, r, cls);
     }
 
 
@@ -336,49 +396,67 @@ public class ShapeView
      * the logical location and not the extent of objects. Hence it is most
      * useful in scenarios where objects only span one cell.
      *
-     * @param shape    The shape whose neighbors will be located.
-     * @param distance Distance in which to look for other objects.
-     * @param diag     Is the distance also diagonal?
-     * @param cls Class of objects to look for (null or Object.class will find
+     * @param shape
+     *            The shape whose neighbors will be located.
+     * @param distance
+     *            Distance in which to look for other objects.
+     * @param diag
+     *            Is the distance also diagonal?
+     * @param cls
+     *            Class of objects to look for (null or Object.class will find
      *            all classes).
-     * @param <MyShape> The type of shape to look for, as specified
-     *                  in the cls parameter.
+     * @param <MyShape>
+     *            The type of shape to look for, as specified in the cls
+     *            parameter.
      * @return A collection of all neighbors found.
      */
     public <MyShape extends Shape> Set<MyShape> getNeighbors(
-        Shape shape, float distance, boolean diag, Class<MyShape> cls)
+        Shape shape,
+        float distance,
+        boolean diag,
+        Class<MyShape> cls)
     {
         if (distance < 0.0)
         {
             throw new IllegalArgumentException(
                 "Distance must not be less than 0.0. It was: " + distance);
         }
-        return null; //collisionChecker.getNeighbors(shape, distance, diag, cls);
+        return null; // collisionChecker.getNeighbors(shape, distance, diag,
+// cls);
     }
 
 
     // ----------------------------------------------------------
     /**
-     * Return all objects that intersect a straight line from the location at
-     * a specified angle. The angle is clockwise.
+     * Return all objects that intersect a straight line from the location at a
+     * specified angle. The angle is clockwise.
      *
-     * @param x x-coordinate.
-     * @param y y-coordinate.
-     * @param angle The angle relative to current rotation of the object.
-     *            (0-359).
-     * @param length How far we want to look (in cells).
-     * @param cls Class of objects to look for (null or Object.class will find
+     * @param x
+     *            x-coordinate.
+     * @param y
+     *            y-coordinate.
+     * @param angle
+     *            The angle relative to current rotation of the object. (0-359).
+     * @param length
+     *            How far we want to look (in cells).
+     * @param cls
+     *            Class of objects to look for (null or Object.class will find
      *            all classes).
-     * @param <MyShape> The type of shape to look for, as specified
-     *                  in the cls parameter.
+     * @param <MyShape>
+     *            The type of shape to look for, as specified in the cls
+     *            parameter.
      * @return A collection of all objects found.
      */
     public <MyShape extends Shape> Set<MyShape> getShapesInDirection(
-        float x, float y, float angle, float length, Class<MyShape> cls)
+        float x,
+        float y,
+        float angle,
+        float length,
+        Class<MyShape> cls)
     {
         return null;
-        //return collisionChecker.getObjectsInDirection(
-        //    x, y, angle, length, cls);
+        // return collisionChecker.getObjectsInDirection(
+        // x, y, angle, length, cls);
     }
 
 
@@ -387,7 +465,8 @@ public class ShapeView
      * Adds a shape to the {@link ShapeField} currently in use by this view.
      * This method is a shortcut for {@code getShapeField().add(shape)}.
      *
-     * @param shape the shape to add
+     * @param shape
+     *            the shape to add
      */
     public void add(Shape shape)
     {
@@ -398,10 +477,11 @@ public class ShapeView
     // ----------------------------------------------------------
     /**
      * Removes a shape from the {@link ShapeField} currently in use by this
-     * view. This method is a shortcut for
-     * {@code getShapeField().remove(shape)}.
+     * view. This method is a shortcut for {@code getShapeField().remove(shape)}
+     * .
      *
-     * @param shape the shape to remove
+     * @param shape
+     *            the shape to remove
      */
     public void remove(Shape shape)
     {
@@ -436,12 +516,13 @@ public class ShapeView
     /**
      * Sets the background color of the view.
      *
-     * @param color the desired background {@link Color}
+     * @param color
+     *            the desired background {@link Color}
      */
     public void setBackgroundColor(Color color)
     {
         backgroundColor = color;
-        //setBackgroundColor(color.toRawColor());
+        // setBackgroundColor(color.toRawColor());
 
         conditionallyRepaint();
     }
@@ -479,23 +560,21 @@ public class ShapeView
     // ----------------------------------------------------------
     public void repaint(RectF bounds)
     {
-        /*if (repaintThread == null)
-        {
-            return;
-        }
-
-        repaintThread.repaintIfNecessary(bounds);*/
+        /*
+         * if (repaintThread == null) { return; }
+         * repaintThread.repaintIfNecessary(bounds);
+         */
     }
 
+    private long   lastFrameStart = 0;
+    private long   framesThusFar  = 0;
+    private double fps            = 0;
 
-    private long lastFrameStart = 0;
-    private long framesThusFar = 0;
-    private double fps = 0;
 
     // ----------------------------------------------------------
     /**
-     * The real method that performs shape drawing in response to a
-     * callback from the repainting thread.
+     * The real method that performs shape drawing in response to a callback
+     * from the repainting thread.
      */
     private void doRepaint(RectF bounds)
     {
@@ -517,8 +596,8 @@ public class ShapeView
                         }
                         else if (backgroundColor != null)
                         {
-                            drawing.canvas.drawColor(
-                                    backgroundColor.toRawColor());
+                            drawing.canvas.drawColor(backgroundColor
+                                .toRawColor());
                         }
 
                         drawContents(bounds);
@@ -553,7 +632,9 @@ public class ShapeView
     // ----------------------------------------------------------
     /**
      * Draw all of this view's shapes on the given canvas.
-     * @param canvas The canvas to draw on.
+     *
+     * @param repaintBounds
+     *            Bounds that are used for drawing.
      */
     protected void drawContents(RectF repaintBounds)
     {
@@ -565,7 +646,7 @@ public class ShapeView
             for (Shape shape : shapeField)
             {
                 if (shape.getParentView() != null && shape.isVisible()
-                        && shape.getBounds() != null)
+                    && shape.getBounds() != null)
                 {
                     drawing.canvas.save();
 
@@ -604,9 +685,9 @@ public class ShapeView
     {
         // FIXME re-enable
 
-        //ScaleGestureDetector detector = new ScaleGestureDetector(
-        //    getContext(), new ScaleGestureListener());
-        //gestureDetectors.add(detector);
+        // ScaleGestureDetector detector = new ScaleGestureDetector(
+        // getContext(), new ScaleGestureListener());
+        // gestureDetectors.add(detector);
     }
 
 
@@ -618,9 +699,9 @@ public class ShapeView
     {
         // FIXME re-enable
 
-        //RotateGestureDetector detector = new RotateGestureDetector(
-        //    getContext(), new RotateGestureListener());
-        //gestureDetectors.add(detector);
+        // RotateGestureDetector detector = new RotateGestureDetector(
+        // getContext(), new RotateGestureListener());
+        // gestureDetectors.add(detector);
     }
 
 
@@ -636,8 +717,10 @@ public class ShapeView
         {
             try
             {
-                Method onTouchEvent = detector.getClass().getMethod(
-                    "onTouchEvent", MotionEvent.class);
+                Method onTouchEvent =
+                    detector.getClass().getMethod(
+                        "onTouchEvent",
+                        MotionEvent.class);
 
                 boolean thisResult = (Boolean)onTouchEvent.invoke(detector, e);
 
@@ -649,11 +732,9 @@ public class ShapeView
             }
         }
 
-        /*if (gestureDetector.onTouchEvent(e))
-        {
-            return true;
-        }
-        else*/ if (action == MotionEvent.ACTION_POINTER_DOWN
+        /*
+         * if (gestureDetector.onTouchEvent(e)) { return true; } else
+         */if (action == MotionEvent.ACTION_POINTER_DOWN
             || action == MotionEvent.ACTION_DOWN)
         {
             processTouchEvent(e, onTouchDown);
@@ -664,8 +745,8 @@ public class ShapeView
             processTouchEvent(e, onTouchMove);
             return true;
         }
-        else if (action == MotionEvent.ACTION_POINTER_UP ||
-            action == MotionEvent.ACTION_UP)
+        else if (action == MotionEvent.ACTION_POINTER_UP
+            || action == MotionEvent.ACTION_UP)
         {
             processTouchEvent(e, onTouchUp);
             return true;
@@ -691,17 +772,16 @@ public class ShapeView
         }
 
         if ((event == onTouchMove || event == onTouchUp)
-                && shapeBeingDragged != null)
+            && shapeBeingDragged != null)
         {
             eventHandled = event.dispatch(shapeBeingDragged, e);
         }
         else
         {
             // FIXME Need a better way to figure out "fuzzy touches"
-            PointF worldPt = coordinateSystem.deviceToLocal(
-                    e.getX(), e.getY());
-            PointF otherPt = coordinateSystem.deviceToLocal(
-                    e.getX() + 10, e.getY());
+            PointF worldPt = coordinateSystem.deviceToLocal(e.getX(), e.getY());
+            PointF otherPt =
+                coordinateSystem.deviceToLocal(e.getX() + 10, e.getY());
             float radius = Math.abs(otherPt.x - worldPt.x);
 
             Iterable<Shape> shapes = getShapes().locatedWithin(worldPt, radius);
@@ -710,8 +790,7 @@ public class ShapeView
             {
                 eventHandled |= event.dispatch(shape, e);
 
-                if (event == onTouchDown
-                        && onTouchMove.isSupportedBy(shape, e))
+                if (event == onTouchDown && onTouchMove.isSupportedBy(shape, e))
                 {
                     shapeBeingDragged = shape;
                     break;
@@ -752,7 +831,7 @@ public class ShapeView
         Context ctxt = getContext();
         if (ctxt != null)
         {
-               onKeyDown.dispatch(ctxt, e);
+            onKeyDown.dispatch(ctxt, e);
         }
 
         return super.onKeyDown(keyCode, e);
@@ -763,13 +842,26 @@ public class ShapeView
     /**
      * Returns true if the left shape is drawn in front of (later than) the
      * shape on the right.
-     * @param left  The shape to check.
-     * @param right The shape to check against.
+     *
+     * @param left
+     *            The shape to check.
+     * @param right
+     *            The shape to check against.
      * @return True if left is drawn in front of (later than) right.
      */
     public boolean isInFrontOf(Shape left, Shape right)
     {
         return shapeField.isInFrontOf(left, right);
+    }
+
+    /**
+     * Returns the canvas in the current view.
+     *
+     * @return drawing canvas
+     */
+    protected Canvas getCanvas()
+    {
+        return drawing.canvas;
     }
 
 
@@ -801,10 +893,11 @@ public class ShapeView
     }
 
 
-    //~ Inner classes .........................................................
+    // ~ Inner classes .........................................................
 
     // ----------------------------------------------------------
-    private class CanvasDrawing implements Drawing
+    private class CanvasDrawing
+        implements Drawing
     {
         public Canvas canvas;
 
@@ -844,10 +937,12 @@ public class ShapeView
 
 
     // ----------------------------------------------------------
-    private class PhysicsThread extends Thread
+    private class PhysicsThread
+        extends Thread
     {
-        private boolean running;
+        private boolean          running;
         private static final int FRAME_RATE = 30;
+
 
         public PhysicsThread()
         {
@@ -896,7 +991,7 @@ public class ShapeView
 
                 if (remainingTime > 0)
                 {
-                    //SystemClock.sleep(remainingTime);
+                    // SystemClock.sleep(remainingTime);
                 }
             }
         }
@@ -904,11 +999,15 @@ public class ShapeView
 
 
     // ----------------------------------------------------------
-    private class SurfaceHolderCallback implements SurfaceHolder.Callback
+    private class SurfaceHolderCallback
+        implements SurfaceHolder.Callback
     {
         // ----------------------------------------------------------
-        public void surfaceChanged(SurfaceHolder holder, int format,
-            int width, int height)
+        public void surfaceChanged(
+            SurfaceHolder holder,
+            int format,
+            int width,
+            int height)
         {
             repaint();
         }
@@ -920,9 +1019,9 @@ public class ShapeView
             surfaceCreated = true;
 
             animationManager = new ShapeAnimationManager(ShapeView.this);
-            //animationManager.start();
+            // animationManager.start();
 
-            //if (shapeField != null && shapeField.hasNonstaticShapes())
+            // if (shapeField != null && shapeField.hasNonstaticShapes())
             {
                 startPhysicsSimulation();
             }
@@ -946,118 +1045,44 @@ public class ShapeView
 
 
     // ----------------------------------------------------------
-    /*private class ScaleGestureListener
-        implements ScaleGestureDetector.OnScaleGestureListener
-    {
-        public boolean onScale(ScaleGestureDetector detector)
-        {
-            onScaleForwarder.forward(detector);
-
-            if (!onScaleForwarder.methodWasFound())
-            {
-                return false;
-            }
-            else if (onScaleForwarder.result() instanceof Boolean)
-            {
-                return (Boolean) onScaleForwarder.result();
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        public boolean onScaleBegin(ScaleGestureDetector detector)
-        {
-            // TODO Auto-generated method stub
-            return true;
-        }
-
-        public void onScaleEnd(ScaleGestureDetector detector)
-        {
-            // TODO Auto-generated method stub
-        }
-    }
-
-
-    // ----------------------------------------------------------
-    private class RotateGestureListener
-        implements RotateGestureDetector.OnRotateGestureListener
-    {
-        public boolean onRotate(RotateGestureDetector detector)
-        {
-            onRotateForwarder.forward(detector);
-
-            if (!onRotateForwarder.methodWasFound())
-            {
-                return false;
-            }
-            else if (onRotateForwarder.result() instanceof Boolean)
-            {
-                return (Boolean) onRotateForwarder.result();
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        public boolean onRotateBegin(RotateGestureDetector detector)
-        {
-            onRotateBeginForwarder.forward(detector);
-
-            if (!onRotateBeginForwarder.methodWasFound())
-            {
-                return true;
-            }
-            else if (onRotateBeginForwarder.result() instanceof Boolean)
-            {
-                return (Boolean) onRotateBeginForwarder.result();
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        public void onRotateEnd(RotateGestureDetector detector)
-        {
-            // TODO Auto-generated method stub
-
-        }
-    }
-
-
-    // ----------------------------------------------------------
-    // FIXME: Is this supposed to be used?  Because it's not
-    @SuppressWarnings("unused")
-    private class ShapeGestureListener
-        extends GestureDetector.SimpleOnGestureListener
-    {
-        //~ Methods ...........................................................
-
-        // ----------------------------------------------------------
-        public boolean onFling(MotionEvent startEvent, MotionEvent endEvent,
-            float velocityX, float velocityY)
-        {
-            onFlingForwarder.forward(
-                startEvent, endEvent, velocityX, velocityY);
-
-            if (!onFlingForwarder.methodWasFound())
-            {
-                return false;
-            }
-            else if (onFlingForwarder.result() instanceof Boolean)
-            {
-                return (Boolean) onFlingForwarder.result();
-            }
-            else
-            {
-                return true;
-            }
-        }
-    }*/
-
+    /*
+     * private class ScaleGestureListener implements
+     * ScaleGestureDetector.OnScaleGestureListener { public boolean
+     * onScale(ScaleGestureDetector detector) {
+     * onScaleForwarder.forward(detector); if
+     * (!onScaleForwarder.methodWasFound()) { return false; } else if
+     * (onScaleForwarder.result() instanceof Boolean) { return (Boolean)
+     * onScaleForwarder.result(); } else { return true; } } public boolean
+     * onScaleBegin(ScaleGestureDetector detector) { // TODO Auto-generated
+     * method stub return true; } public void onScaleEnd(ScaleGestureDetector
+     * detector) { // TODO Auto-generated method stub } } //
+     * ---------------------------------------------------------- private class
+     * RotateGestureListener implements
+     * RotateGestureDetector.OnRotateGestureListener { public boolean
+     * onRotate(RotateGestureDetector detector) {
+     * onRotateForwarder.forward(detector); if
+     * (!onRotateForwarder.methodWasFound()) { return false; } else if
+     * (onRotateForwarder.result() instanceof Boolean) { return (Boolean)
+     * onRotateForwarder.result(); } else { return true; } } public boolean
+     * onRotateBegin(RotateGestureDetector detector) {
+     * onRotateBeginForwarder.forward(detector); if
+     * (!onRotateBeginForwarder.methodWasFound()) { return true; } else if
+     * (onRotateBeginForwarder.result() instanceof Boolean) { return (Boolean)
+     * onRotateBeginForwarder.result(); } else { return true; } } public void
+     * onRotateEnd(RotateGestureDetector detector) { // TODO Auto-generated
+     * method stub } } //
+     * ---------------------------------------------------------- // FIXME: Is
+     * this supposed to be used? Because it's not
+     * @SuppressWarnings("unused") private class ShapeGestureListener extends
+     * GestureDetector.SimpleOnGestureListener { //~ Methods
+     * ........................................................... //
+     * ---------------------------------------------------------- public boolean
+     * onFling(MotionEvent startEvent, MotionEvent endEvent, float velocityX,
+     * float velocityY) { onFlingForwarder.forward( startEvent, endEvent,
+     * velocityX, velocityY); if (!onFlingForwarder.methodWasFound()) { return
+     * false; } else if (onFlingForwarder.result() instanceof Boolean) { return
+     * (Boolean) onFlingForwarder.result(); } else { return true; } } }
+     */
 
     private class CoordinateRespectingMotionEventDispatcher
         extends MotionEventDispatcher
@@ -1080,17 +1105,19 @@ public class ShapeView
         {
             if (xyTransformer == null)
             {
-                xyTransformer = new MethodTransformer(float.class, float.class)
-                {
-                    // ----------------------------------------------------------
-                    protected Object[] transform(Object... args)
-                    {
-                        MotionEvent e = (MotionEvent) args[0];
-                        PointF pt = coordinateSystem.deviceToLocal(
-                                e.getX(), e.getY());
-                        return new Object[] { pt.x, pt.y };
-                    }
-                };
+                xyTransformer =
+                    new MethodTransformer(float.class, float.class) {
+                        // ----------------------------------------------------------
+                        protected Object[] transform(Object... args)
+                        {
+                            MotionEvent e = (MotionEvent)args[0];
+                            PointF pt =
+                                coordinateSystem.deviceToLocal(
+                                    e.getX(),
+                                    e.getY());
+                            return new Object[] { pt.x, pt.y };
+                        }
+                    };
             }
 
             return xyTransformer;

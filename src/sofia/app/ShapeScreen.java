@@ -92,7 +92,7 @@ public abstract class ShapeScreen
      */
     protected ShapeView createShapeView(ShapeScreen parent)
     {
-           return new ShapeView(parent);
+        return new ShapeView(parent);
     }
 
 

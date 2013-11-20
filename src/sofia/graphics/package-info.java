@@ -21,8 +21,6 @@
  * <li>{@link sofia.graphics.RectangleShape}</li>
  * <li>{@link sofia.graphics.OvalShape}</li>
  * <li>{@link sofia.graphics.TextShape}</li>
- * <li>{@link sofia.graphics.CompositeShape} (to create shapes composed of
- * other shapes and manipulate them as single entities)</li>
  * </ul>
  * <p>
  * You can use these shape classes directly or extend them to add your own
