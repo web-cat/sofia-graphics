@@ -499,6 +499,17 @@ public class ShapeView
         shapeField.clear();
     }
 
+    /**
+     * Sets the boolean that is used for whether the fps (frames per second)
+     * should be displayed on the screen.
+     *
+     * @param showFps boolean for determining if the fps should be displayed
+     */
+    public void showFps(boolean showFps)
+    {
+        this.showFps = showFps;
+    }
+
 
     // ----------------------------------------------------------
     /**
@@ -569,6 +580,7 @@ public class ShapeView
     private long   lastFrameStart = 0;
     private long   framesThusFar  = 0;
     private double fps            = 0;
+    private boolean showFps       = false;
 
 
     // ----------------------------------------------------------
@@ -613,8 +625,11 @@ public class ShapeView
                             framesThusFar = 0;
                         }
 
-                        String fpsStr = "fps: " + fps;
-                        drawing.canvas.drawText(fpsStr, 0, 12, new Paint());
+                        if (showFps)
+                        {
+                            String fpsStr = "fps: " + String.format("%.1f", fps);
+                            drawing.canvas.drawText(fpsStr, 3, 12, new Paint());
+                        }
                     }
                 }
             }
