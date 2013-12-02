@@ -386,7 +386,7 @@ public class ShapeView
         float r,
         Class<MyShape> cls)
     {
-        return null; // collisionChecker.getObjectsInRange(x, y, r, cls);
+        return getShapes().locatedWithin(new PointF(x, y), r).withClass(cls).all();
     }
 
 
@@ -421,8 +421,8 @@ public class ShapeView
             throw new IllegalArgumentException(
                 "Distance must not be less than 0.0. It was: " + distance);
         }
-        return null; // collisionChecker.getNeighbors(shape, distance, diag,
-// cls);
+        return null;
+        // use shape filter to get shapes
     }
 
 
@@ -455,8 +455,7 @@ public class ShapeView
         Class<MyShape> cls)
     {
         return null;
-        // return collisionChecker.getObjectsInDirection(
-        // x, y, angle, length, cls);
+        // use shape filter to get shapes
     }
 
 
