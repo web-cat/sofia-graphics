@@ -1,5 +1,6 @@
 package sofia.graphics;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 import org.jbox2d.callbacks.QueryCallback;
@@ -698,7 +699,10 @@ public abstract class ShapeFilter<ShapeType extends Shape>
      * Restrict this filter to only match shapes that occupy the specified
      * point.
      *
-     * @param point the point to test
+     * @param x1 x coordinate for the first point for the line
+     * @param y1 y coordinate for the first point for the line
+     * @param x2 x coordinate for the second point for the line
+     * @param y2 y coordinate for the second point for the line
      * @return a new filter with the given restriction
      */
     public ShapeFilter<ShapeType> throughLine(
@@ -713,7 +717,8 @@ public abstract class ShapeFilter<ShapeType extends Shape>
      * Restrict this filter to only match shapes that occupy the specified
      * point.
      *
-     * @param point the point to test
+     * @param start point denoting the beginning of the line
+     * @param end point denoting the end of the line
      * @return a new filter with the given restriction
      */
     public ShapeFilter<ShapeType> throughLine(
@@ -883,7 +888,7 @@ public abstract class ShapeFilter<ShapeType extends Shape>
      * Gets the JBox2D world where this filter will be executed. The default
      * behavior of this method is to ask the previous filter for its world,
      *
-     * @return
+     * @return JBox2D world where the filter is executed
      */
     protected World b2World()
     {

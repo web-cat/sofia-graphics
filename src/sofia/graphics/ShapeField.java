@@ -128,7 +128,6 @@ public class ShapeField extends ShapeSet<Shape>
         };
     }
 
-
     // ----------------------------------------------------------
     @Override
     public boolean add(Shape shape)

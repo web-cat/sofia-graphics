@@ -1248,11 +1248,11 @@ public abstract class Shape
     /**
      * Sets the x-coordinate of the centroid of the shape.
      *
-     * @param the x-coordinate of the centroid of the shape
+     * @param x the x-coordinate of the centroid of the shape
      */
     public void setX(float x)
     {
-        getPosition().x = x;
+        setPosition(x, getPosition().y);
     }
 
 
@@ -1264,7 +1264,7 @@ public abstract class Shape
      */
     public void setY(float y)
     {
-        getPosition().y = y;
+        setPosition(getPosition().x, y);
     }
 
 
