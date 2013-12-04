@@ -875,7 +875,7 @@ public class ShapeView
      */
     protected Canvas getCanvas()
     {
-        return drawing.canvas;
+        return drawing.getCanvas();
     }
 
 

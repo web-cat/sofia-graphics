@@ -465,7 +465,6 @@ public class Image
         bitmap.setPixels(rawPixels, 0, width, 0, 0, width, height);
     }
 
-
     // TODO: add media computation features here
 
 

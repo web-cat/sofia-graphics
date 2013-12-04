@@ -798,7 +798,6 @@ public abstract class Shape
     public void applyLinearImpulse(float x, float y)
     {
         // TODO assert/check that body exists
-
         b2Body.applyLinearImpulse(new Vec2(x, y), b2Body.getWorldCenter());
     }
 
@@ -1823,6 +1822,11 @@ public abstract class Shape
      */
     public boolean canCollideWith(Shape otherShape)
     {
+        if (!this.isActive() || !otherShape.isActive())
+        {
+            return false;
+        }
+        //TODO Add more details for determining if they can collide
         return true;
     }
 
