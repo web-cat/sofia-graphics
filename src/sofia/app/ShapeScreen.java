@@ -219,6 +219,14 @@ public abstract class ShapeScreen
 
 
     // ----------------------------------------------------------
+    /**
+     * Gets a filter that can be used to find shapes that match certain
+     * criteria. This method is a shortcut for
+     * {@code getShapeField().getShapes()}.
+     *
+     * @return a filter that can be used to find shapes that match certain
+     *         criteria
+     */
     public ShapeFilter<Shape> getShapes()
     {
         return shapeView.getShapes();
@@ -226,6 +234,12 @@ public abstract class ShapeScreen
 
 
     // ----------------------------------------------------------
+    /**
+     * Gets the {@link ShapeField} that the shapeView is currently displaying and
+     * simulating.
+     *
+     * @return the {@link ShapeField} currently in use by the view
+     */
     public ShapeField getShapeField()
     {
         return shapeView.getShapeField();
@@ -233,6 +247,15 @@ public abstract class ShapeScreen
 
 
     // ----------------------------------------------------------
+    /**
+     * Sets the {@link ShapeField} that the shapeView is currently displaying and
+     * simulating. When developing games or simulations that involve multiple
+     * "levels" or other complex multiple shape layouts, this method can be used
+     * to quickly and easily swap out the entire set of shapes used by the view.
+     *
+     * @param newField
+     *            the {@link ShapeField} to be used by the view
+     */
     public void setShapeField(ShapeField newField)
     {
         shapeView.setShapeField(newField);
