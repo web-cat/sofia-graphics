@@ -1,15 +1,15 @@
 package sofia.graphics;
 
 import android.graphics.Bitmap;
-import android.graphics.Rect;
 import android.graphics.RectF;
 
 //-------------------------------------------------------------------------
 /**
- * A shape that renders itself using a bitmap image.
+ * A shape that represents images, currently just a shortcut for using images
+ * with the {@link RectangleShape}.
  *
  * @author  Brian Bowden
- * @author  Last changed by $Author: bbowden1 $
+ * @author  Last changed by $Author$
  * @version $Date: 2013/10/29 16:32 $
  */
 public class ImageShape
@@ -18,8 +18,6 @@ public class ImageShape
     //~ Fields ................................................................
 
     private Image image;
-    private Rect sourceBounds;
-
 
     //~ Constructors ..........................................................
 
@@ -32,20 +30,6 @@ public class ImageShape
     public ImageShape()
     {
         this(new RectF(0, 0, 0, 0));
-    }
-
-    // ----------------------------------------------------------
-    /**
-     * Creates an {@code ImageShape} with the specified bounds and no
-     * associated image. The shape will appear blank when it is drawn unless an
-     * image is set by calling {@link #setImage(String)} or a similar method.
-     *
-     * @param bounds the bounds of the shape, which will cause the image to be
-     *     stretched or shrunk if necessary to fit
-     */
-    public ImageShape(RectF bounds)
-    {
-        super(bounds);
     }
 
 
@@ -67,6 +51,21 @@ public class ImageShape
     public ImageShape(float left, float top, float right, float bottom)
     {
         this(new RectF(left, top, right, bottom));
+    }
+
+
+    // ----------------------------------------------------------
+    /**
+     * Creates an {@code ImageShape} with the specified bounds and no
+     * associated image. The shape will appear blank when it is drawn unless an
+     * image is set by calling {@link #setImage(String)} or a similar method.
+     *
+     * @param bounds the bounds of the shape, which will cause the image to be
+     *     stretched or shrunk if necessary to fit
+     */
+    public ImageShape(RectF bounds)
+    {
+        super(bounds);
     }
 
 
@@ -174,62 +173,5 @@ public class ImageShape
     public void setBitmap(Bitmap newBitmap)
     {
         setImage(new Image(newBitmap));
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * <p>
-     * Gets a {@code Rect} indicating the subset of the image that should be
-     * drawn. Notice that these are integer coordinates since they represent
-     * pixels in the image.
-     * </p><p>
-     * This method returns null if the entire image is being drawn.
-     * </p>
-     *
-     * @return a {@code Rect} indicating the subset of the image that should be
-     *     drawn, or null if the entire image is being drawn
-     */
-    public Rect getSourceBounds()
-    {
-        return sourceBounds;
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * Sets the subset of the image that should be drawn. Notice that these are
-     * integer coordinates since they represent pixels in the image.
-     *
-     * @param newSourceBounds the bounds of the source rectangle indicating the
-     *     portion of the image to be drawn, or null to draw the entire image
-     */
-    public void setSourceBounds(Rect newSourceBounds)
-    {
-        this.sourceBounds = newSourceBounds;
-        conditionallyRepaint();
-    }
-
-
-    // ----------------------------------------------------------
-    /**
-     * <p>
-     * Sets the subset of the image that should be drawn. Notice that these are
-     * integer coordinates since they represent pixels in the image.
-     * </p><p>
-     * In order to revert this and have the entire image drawn again, call
-     * {@link #setSourceBounds(Rect)} and pass it {@code null}.
-     * </p>
-     *
-     * @param left the x-coordinate of the left side of the source rectangle
-     * @param top the y-coordinate of the top of the source rectangle
-     * @param right the x-coordinate of the right side of the source rectangle
-     *     (which is <em>not</em> included in the pixels that are drawn)
-     * @param bottom the y-coordinate of the bottom of the source rectangle
-     *     (which is <em>not</em> included in the pixels that are drawn)
-     */
-    public void setSourceBounds(int left, int top, int right, int bottom)
-    {
-        setSourceBounds(new Rect(left, top, right, bottom));
     }
 }
