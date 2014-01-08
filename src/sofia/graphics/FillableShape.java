@@ -169,7 +169,7 @@ public abstract class FillableShape extends StrokedShape
     /**
      * Sets the image used to fill this shape.
      *
-     * @param newImage the image used to fill this shape, or null to remove the
+     * @param imageName the image used to fill this shape, or null to remove the
      *     image
      */
     public void setImage(String imageName)
@@ -333,7 +333,6 @@ public abstract class FillableShape extends StrokedShape
          * call this constructor directly; instead, they need to use the
          * {@link StrokedShape#animate(long)} method to get an animator object.
          *
-         * @param shape the shape to animate
          * @param duration the length of one pass of the animation, in
          *     milliseconds
          */
