@@ -737,7 +737,11 @@ public abstract class ShapeFilter<ShapeType extends Shape>
                 @Override
                 protected RectF thisQueryBounds()
                 {
-                    return new RectF(start.x, start.y, end.x, end.y);
+                    return new RectF(Math.min(start.x, end.x),
+                                     Math.min(start.y, end.y),
+                                     Math.max(start.x,  end.x),
+                                     Math.max(start.y, end.y));
+                    //return new RectF(start.x, start.y, end.x, end.y);
                 }
 
                 @Override
@@ -751,7 +755,6 @@ public abstract class ShapeFilter<ShapeType extends Shape>
                         Box2DUtils.pointFToVec2(start, input.p1);
                         Box2DUtils.pointFToVec2(end, input.p2);
                         input.maxFraction = 1;
-
                         RayCastOutput output = new RayCastOutput();
 
                         for (Fixture fixture : new FixtureIterator(body))
