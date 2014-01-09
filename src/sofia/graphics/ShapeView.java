@@ -419,7 +419,7 @@ public class ShapeView
         if (distance < 0.0)
         {
             throw new IllegalArgumentException(
-                "Distance must not be less than 0.0. It was: " + distance);
+                "Distance must be positive. It was: " + distance);
         }
         return null;
         // use shape filter to get shapes
@@ -437,7 +437,7 @@ public class ShapeView
      *            y-coordinate.
      * @param angle
      *            The angle relative to current rotation of the object. (0-359).
-     * @param length
+     * @param distance
      *            How far we want to look (in cells).
      * @param cls
      *            Class of objects to look for (null or Object.class will find
@@ -451,11 +451,20 @@ public class ShapeView
         float x,
         float y,
         float angle,
-        float length,
+        float distance,
         Class<MyShape> cls)
     {
-        return null;
-        // use shape filter to get shapes
+        if (distance < 0.0)
+        {
+            throw new IllegalArgumentException(
+                "Distance must be positive. It was: " + distance);
+        }
+
+        double radians = Math.toRadians(angle);
+        float endX = x + (float) (Math.cos(radians) * distance);
+        // negative of distance since up is negative
+        float endY = y + (float) (Math.sin(radians) * -distance);
+        return getShapes().withClass(cls).throughLine(x, y, endX, endY).all();
     }
 
 
