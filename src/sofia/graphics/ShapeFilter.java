@@ -739,7 +739,7 @@ public abstract class ShapeFilter<ShapeType extends Shape>
                 {
                     return new RectF(Math.min(start.x, end.x),
                                      Math.min(start.y, end.y),
-                                     Math.max(start.x,  end.x),
+                                     Math.max(start.x, end.x),
                                      Math.max(start.y, end.y));
                     //return new RectF(start.x, start.y, end.x, end.y);
                 }
