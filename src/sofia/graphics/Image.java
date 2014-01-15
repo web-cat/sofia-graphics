@@ -38,7 +38,10 @@ public class Image
                         @Override
                         public void recycle(Bitmap value)
                         {
-                            value.recycle();
+                            if (value != null)
+                            {
+                                value.recycle();
+                            }
                         }
             });
 
@@ -225,8 +228,14 @@ public class Image
 
         if (bitmap == null)
         {
-            bitmap = bitmapCache.get(fileName /*FIXME*/);
-
+            if (fileName != null)
+            {
+                bitmap = bitmapCache.get(fileName);
+            }
+            else if (klass != null)
+            {
+                bitmap = bitmapCache.get(klass.getName());
+            }
             if (bitmap != null)
             {
                 alreadyCached = true;
@@ -235,13 +244,12 @@ public class Image
 
         if (bitmap == null)
         {
-//            System.out.println("Image.resolveAgainstContext(" + context + ")");
+            //System.out.println("Image.resolveAgainstContext(" + context + ")");
             if (bitmapId != 0)
             {
                 bitmap = BitmapFactory.decodeResource(
                     context.getResources(), bitmapId);
-//                System.out.println("id " + Integer.toString(bitmapId, 16)
-//                    + " = " + bitmap);
+                //System.out.println("id " + Integer.toString(bitmapId, 16) + " = " + bitmap);
             }
             else
             {
@@ -250,14 +258,12 @@ public class Image
                 {
                     bitmap = JarResources.getBitmap(
                         context, fileName, true, scaleForDpi, "");
-//                    System.out.println(
-//                        "fileName " + fileName + " = " + stream);
+                  //System.out.println("fileName " + fileName);
                 }
                 else if (klass != null)
                 {
                     bitmap = bitmapFor(context, klass, scaleForDpi);
-//                    System.out.println(
-//                        "class " + klass.getName() + " = " + stream);
+                    //System.out.println("class " + klass.getName());
                 }
             }
         }
@@ -284,19 +290,18 @@ public class Image
 //            System.out.println("bitmap = default image = " + bitmap);
         }
 
-//        if (bitmap != null)
-//        {
-//            System.out.println("bitmap " + bitmap + " " + bitmap.getWidth()
-//                + "x" + bitmap.getHeight() + " density = " +
-//                bitmap.getDensity());
-//            System.out.println("target density = " +
-//                context.getResources().getDisplayMetrics().densityDpi);
-//        }
-
         if (!alreadyCached && bitmap != null)
         {
-            System.out.println("Putting " + fileName + " in cache");
-            bitmapCache.put(fileName /*FIXME*/, bitmap);
+            if (fileName != null)
+            {
+                System.out.println("Putting " + fileName + " in cache");
+                bitmapCache.put(fileName, bitmap);
+            }
+            if (klass != null)
+            {
+                System.out.println("Putting " + klass.getName() + " in cache");
+                bitmapCache.put(klass.getName(), bitmap);
+            }
         }
     }
 
@@ -477,6 +482,7 @@ public class Image
         Bitmap bm = null;
         while (bm == null && cls != null)
         {
+            System.out.println(cls);
             if (bm == null)
             {
                 bm = JarResources.getBitmap(context,
