@@ -421,8 +421,39 @@ public class ShapeView
             throw new IllegalArgumentException(
                 "Distance must be positive. It was: " + distance);
         }
-        return null;
-        // use shape filter to get shapes
+
+        float x = shape.getX();
+        float y = shape.getY();
+
+        ShapeSet<MyShape> neighbors = (ShapeSet<MyShape>) getShapes().all();
+        // if we are including items diagonally, then we can look to see if both
+        // the x and y coordinates are within the distance, note we don't calculate
+        // the distance between the two shapes since the bounding area is a square,
+        // not a circle
+        if (diag)
+        {
+            for (MyShape currShape : neighbors)
+            {
+                if (currShape.getX() > (x + distance) || currShape.getY() > (y + distance))
+                {
+                    neighbors.remove(currShape);
+                }
+            }
+        }
+        // otherwise, look to see if the number of cells between the two distances
+        // is within the distance
+        else
+        {
+            for (MyShape currShape : neighbors)
+            {
+                if (Math.abs((currShape.getX() + currShape.getY()) - (x + y)) > distance)
+                {
+                    neighbors.remove(currShape);
+                }
+            }
+        }
+
+        return neighbors;
     }
 
 
@@ -1003,7 +1034,10 @@ public class ShapeView
                     world.step(1f / FRAME_RATE, velIters, posIters);
                 }
 
-                animationManager.step(startTime);
+                if (animationManager != null)
+                {
+                    animationManager.step(startTime);
+                }
 
                 shapeField.runDeferredOperations();
                 shapeField.notifySleepRecipients();
