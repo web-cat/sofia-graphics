@@ -16,7 +16,6 @@ public class ImageShape
     extends RectangleShape
 {
     //~ Fields ................................................................
-
     private Image image;
 
     //~ Constructors ..........................................................
