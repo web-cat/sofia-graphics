@@ -386,7 +386,7 @@ public class ShapeView
         float r,
         Class<MyShape> cls)
     {
-        return getShapes().locatedWithin(new PointF(x, y), r).withClass(cls).all();
+        return getShapes().withClass(cls).locatedWithin(new PointF(x, y), r).all();
     }
 
 
@@ -425,32 +425,28 @@ public class ShapeView
         float x = shape.getX();
         float y = shape.getY();
 
-        ShapeSet<MyShape> neighbors = (ShapeSet<MyShape>) getShapes().all();
-        // if we are including items diagonally, then we can look to see if both
-        // the x and y coordinates are within the distance, note we don't calculate
-        // the distance between the two shapes since the bounding area is a square,
-        // not a circle
-        if (diag)
+        // use a bounding box to limit the area we have to search, if diag is
+        // set to true, then this is the only query needed
+        ShapeSet<MyShape> neighbors = (ShapeSet<MyShape>) getShapes().
+            intersecting(x - distance, y - distance, x + distance, y + distance).all();
+        neighbors.remove(shape);
+
+        // if we're not including the diagonals, then we need to see if the logical
+        // number of cells for each shape is within the distance
+        if (!diag && neighbors.size() > 0)
         {
+            // Need to defer removing shapes til the end
+            ShapeSet<MyShape> shapesToRemove = new ShapeSet<MyShape>();
             for (MyShape currShape : neighbors)
             {
-                if (currShape.getX() > (x + distance) || currShape.getY() > (y + distance))
+                // Check to see if the sum of the differences is less than the distance
+                // ie how many cells would we have to move to get from shape A to B
+                if ((Math.abs(currShape.getX() - x) + Math.abs(currShape.getY() - y)) > distance)
                 {
-                    neighbors.remove(currShape);
+                    shapesToRemove.add(currShape);
                 }
             }
-        }
-        // otherwise, look to see if the number of cells between the two distances
-        // is within the distance
-        else
-        {
-            for (MyShape currShape : neighbors)
-            {
-                if (Math.abs((currShape.getX() + currShape.getY()) - (x + y)) > distance)
-                {
-                    neighbors.remove(currShape);
-                }
-            }
+            neighbors.removeAll(shapesToRemove);
         }
 
         return neighbors;
