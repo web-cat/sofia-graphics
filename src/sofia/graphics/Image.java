@@ -482,7 +482,6 @@ public class Image
         Bitmap bm = null;
         while (bm == null && cls != null)
         {
-            System.out.println(cls);
             if (bm == null)
             {
                 bm = JarResources.getBitmap(context,
