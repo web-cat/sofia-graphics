@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.World;
 import sofia.graphics.internal.ShapeAnimationManager;
 import sofia.internal.events.EventDispatcher;
@@ -132,6 +130,11 @@ public class ShapeView
     // ~ Methods ...............................................................
 
     // ----------------------------------------------------------
+    /**
+     * Returns the current coordinate system for the view.
+     *
+     * @return current coordinate system
+     */
     public CoordinateSystem getCoordinateSystem()
     {
         return coordinateSystem;
@@ -435,11 +438,12 @@ public class ShapeView
         // number of cells for each shape is within the distance
         if (!diag && neighbors.size() > 0)
         {
-            // Need to defer removing shapes til the end
+            // Need to defer removing shapes until the end
             ShapeSet<MyShape> shapesToRemove = new ShapeSet<MyShape>();
             for (MyShape currShape : neighbors)
             {
-                // Check to see if the sum of the differences is less than the distance
+                // Check to see if the sum of the differences of the x and y coordinates
+                // is greater than the distance
                 // ie how many cells would we have to move to get from shape A to B
                 if ((Math.abs(currShape.getX() - x) + Math.abs(currShape.getY() - y)) > distance)
                 {
