@@ -50,7 +50,8 @@ public class LineShape extends StrokedShape
     /**
      * Creates a new {@code LineShape} between two points.
      *
-     * @param bounds the bounding rectangle of the line
+     * @param point1 starting point for the line
+     * @param point2 ending point for the line
      */
     public LineShape(PointF point1, PointF point2)
     {
