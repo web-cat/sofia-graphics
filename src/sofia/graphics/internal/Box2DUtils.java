@@ -1,8 +1,24 @@
+/*
+ * Copyright (C) 2011 Virginia Tech Department of Computer Science
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package sofia.graphics.internal;
 
-import org.jbox2d.common.Vec2;
-
 import android.graphics.PointF;
+
+import org.jbox2d.common.Vec2;
 
 //-------------------------------------------------------------------------
 /**
@@ -10,8 +26,7 @@ import android.graphics.PointF;
  * Intended for framework internal use, but some advanced users (who need to
  * access the JBox2D objects directly) might find these methods useful.
  *
- * @author  Tony Allevato
- * @version 2012.11.04
+ * @author Tony Allevato
  */
 public class Box2DUtils
 {

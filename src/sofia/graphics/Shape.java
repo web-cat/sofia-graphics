@@ -1,14 +1,20 @@
+/*
+ * Copyright (C) 2011 Virginia Tech Department of Computer Science
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package sofia.graphics;
-
-import java.util.HashSet;
-import java.util.Set;
-
-import org.jbox2d.common.Vec2;
-import org.jbox2d.dynamics.Body;
-import org.jbox2d.dynamics.BodyDef;
-import org.jbox2d.dynamics.BodyType;
-import org.jbox2d.dynamics.Fixture;
-import org.jbox2d.dynamics.FixtureDef;
 
 import sofia.graphics.internal.Box2DUtils;
 import sofia.graphics.internal.FixtureIterator;
@@ -23,13 +29,23 @@ import sofia.graphics.internal.animation.XTransformer;
 import sofia.graphics.internal.animation.YTransformer;
 import sofia.internal.events.EventDispatcher;
 import sofia.internal.events.OptionalEventDispatcher;
-import android.graphics.Canvas;
+
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.os.SystemClock;
 import android.view.animation.Interpolator;
+
+import org.jbox2d.common.Vec2;
+import org.jbox2d.dynamics.Body;
+import org.jbox2d.dynamics.BodyDef;
+import org.jbox2d.dynamics.BodyType;
+import org.jbox2d.dynamics.Fixture;
+import org.jbox2d.dynamics.FixtureDef;
+
+import java.util.HashSet;
+import java.util.Set;
 
 // -------------------------------------------------------------------------
 /**
@@ -40,9 +56,7 @@ import android.view.animation.Interpolator;
  * colors), and rotation. Animation support is also provided through this
  * class.
  *
- * @author  Tony Allevato
- * @author  Last changed by $Author: edwards $
- * @version $Date: 2012/08/04 16:32 $
+ * @author Tony Allevato
  */
 public abstract class Shape
 {
