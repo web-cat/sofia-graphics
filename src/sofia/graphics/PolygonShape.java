@@ -51,7 +51,7 @@ public class PolygonShape extends FillableShape
      * directly.
      * </p>
      *
-     * @param xyArray a list of floats that represent the x- and y-coordinates
+     * @param points a list of floats that represent the x- and y-coordinates
      *     of the vertices of the polygon
      * @throws IllegalArgumentException if an odd number of floats is provided
      */
