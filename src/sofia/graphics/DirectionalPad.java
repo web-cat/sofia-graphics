@@ -1,5 +1,6 @@
 package sofia.graphics;
 
+import android.util.SparseIntArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,7 @@ import android.view.MotionEvent;
  * content.
  *
  * @author  Tony Allevato
- * @author  Last changed by $Author$
+ * @author  Brian Bowden
  * @version $Date$
  */
 public class DirectionalPad extends RectangleShape
@@ -31,8 +32,8 @@ public class DirectionalPad extends RectangleShape
 
     private static final int DEFAULT_INACTIVE_ALPHA = 128;
 
-    private static final SparseArray<Integer> touchToKeyActions =
-            new SparseArray<Integer>();
+    private static final SparseIntArray touchToKeyActions =
+            new SparseIntArray();
 
     private static final SparseArray<int[]> keysForZones =
             new SparseArray<int[]>();
@@ -42,21 +43,21 @@ public class DirectionalPad extends RectangleShape
         touchToKeyActions.put(MotionEvent.ACTION_DOWN, KeyEvent.ACTION_DOWN);
         touchToKeyActions.put(MotionEvent.ACTION_UP, KeyEvent.ACTION_UP);
 
-        keysForZones.put(0, new int[] {
-                KeyEvent.KEYCODE_DPAD_RIGHT });
         keysForZones.put(1, new int[] {
-                KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_DOWN });
+                KeyEvent.KEYCODE_DPAD_RIGHT });
         keysForZones.put(2, new int[] {
-                KeyEvent.KEYCODE_DPAD_DOWN });
+                KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_DOWN });
         keysForZones.put(3, new int[] {
-                KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_DOWN });
+                KeyEvent.KEYCODE_DPAD_DOWN });
         keysForZones.put(4, new int[] {
-                KeyEvent.KEYCODE_DPAD_LEFT });
+                KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_DOWN });
         keysForZones.put(5, new int[] {
-                KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_UP });
+                KeyEvent.KEYCODE_DPAD_LEFT });
         keysForZones.put(6, new int[] {
-                KeyEvent.KEYCODE_DPAD_UP });
+                KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_UP });
         keysForZones.put(7, new int[] {
+                KeyEvent.KEYCODE_DPAD_UP });
+        keysForZones.put(8, new int[] {
                 KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_UP });
     }
 
@@ -188,22 +189,19 @@ public class DirectionalPad extends RectangleShape
         float x0 = getBounds().centerX();
         float y0 = getBounds().centerY();
 
-        // Check the distance of the touch from the center of the joystick.
-        // We don't want to allow touches if they're too close to the center,
-        // since the angle would be harder to compute.
-
-        /*float distance = Geometry.distanceBetween(x0, y0, tx, ty);
-        if (distance < getWidth() / 8)
-        {
-            return;
-        }*/
-
         // Compute the "zone" that was tapped; 0 is east, 1 is southeast, 2
         // is south, and so on.
         float angle =
                 mod(Geometry.angleBetween(x0, y0, tx, ty) + 45.0f / 2, 360.0f);
 
-        int zone = (int) (angle / 45);
+        // Check the distance to make sure it's actually close to the dpad
+        float distance = Geometry.distanceBetween(x0, y0, tx, ty);
+        if (distance > getWidth() / 2 || distance > getHeight() / 2)
+        {
+            return;
+        }
+
+        int zone = (int) (angle / 45) + 1;
         int touchAction = e.getActionMasked();
 
         sendDpadEvents(touchAction, keysForZones.get(zone));
@@ -213,19 +211,25 @@ public class DirectionalPad extends RectangleShape
         {
             if (!isFadingIn)
             {
-                log.info("Fading in D-pad");
+                //log.info("Fading in D-pad");
                 animate(500).alpha(255).play();
                 isFadingIn = true;
             }
             else
             {
-                getParentView().removeCallbacks(fadeOutRunnable);
+                if (getParentView() != null)
+                {
+                    getParentView().removeCallbacks(fadeOutRunnable);
+                }
             }
         }
         else if (e.getActionMasked() == MotionEvent.ACTION_UP)
         {
-            log.info("Posting fade-out with 1000 msec delay");
-            getParentView().postDelayed(fadeOutRunnable, 1000);
+            //log.info("Posting fade-out with 1000 msec delay");
+            if (getParentView() != null)
+            {
+                getParentView().postDelayed(fadeOutRunnable, 1000);
+            }
         }
     }
 
@@ -239,18 +243,24 @@ public class DirectionalPad extends RectangleShape
      */
     private void sendDpadEvents(int touchAction, int[] keys)
     {
-        if (touchToKeyActions.get(touchAction) == null)
+        if (touchToKeyActions.get(touchAction) == 0
+         || getParentView() == null)
         {
             return;
         }
 
         int keyAction = touchToKeyActions.get(touchAction);
 
+        // Combine the keycodes into a single int using bitmasking
+        int keyCode = 0;
         for (int key : keys)
         {
-            KeyEvent e = new KeyEvent(keyAction, key);
-            getParentView().dispatchKeyEvent(e);
+            keyCode <<= 8;
+            keyCode |= key;
         }
+
+        KeyEvent e = new KeyEvent(keyAction, keyCode);
+        getParentView().dispatchKeyEvent(e);
     }
 
 
