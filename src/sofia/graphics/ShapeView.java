@@ -62,6 +62,9 @@ public class ShapeView
     private static final EventDispatcher onKeyDown =
         new EventDispatcher("onKeyDown");
 
+    private static final EventDispatcher onKeyUp =
+        new EventDispatcher("onKeyUp");
+
     private static final EventDispatcher onScaleGesture =
         new EventDispatcher("onScaleGesture");
 
@@ -889,6 +892,19 @@ public class ShapeView
         }
 
         return super.onKeyDown(keyCode, e);
+    }
+
+    // ----------------------------------------------------------
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent e)
+    {
+        Context ctxt = getContext();
+        if (ctxt != null)
+        {
+            onKeyUp.dispatch(ctxt, e);
+        }
+
+        return super.onKeyUp(keyCode, e);
     }
 
 
