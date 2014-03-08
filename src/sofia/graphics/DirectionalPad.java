@@ -171,6 +171,35 @@ public class DirectionalPad extends RectangleShape
         isFadingIn = false;
     }
 
+    /**
+     * An alternative process touch, mostly used for the micro world since it
+     * handles motion events differently.
+     *
+     * @param touchAction action code for the motion event
+     * @param tx x coordinate for the event
+     * @param ty y coordinate for the event
+     */
+    public void processTouch(int touchAction, float tx, float ty)
+    {
+        float x0 = getBounds().centerX();
+        float y0 = getBounds().centerY();
+
+        // Compute the "zone" that was tapped; 0 is east, 1 is southeast, 2
+        // is south, and so on.
+        float angle =
+                mod(Geometry.angleBetween(x0, y0, tx, ty) + 45.0f / 2, 360.0f);
+
+        // Check the distance to make sure it's actually close to the dpad
+        float distance = Geometry.distanceBetween(x0, y0, tx, ty);
+        if (distance > getWidth() / 2 || distance > getHeight() / 2)
+        {
+            return;
+        }
+
+        int zone = (int) (angle / 45) + 1;
+        sendDpadEvents(touchAction, keysForZones.get(zone));
+        animateDpad(touchAction);
+    }
 
     //~ Private methods .......................................................
 
@@ -203,34 +232,8 @@ public class DirectionalPad extends RectangleShape
 
         int zone = (int) (angle / 45) + 1;
         int touchAction = e.getActionMasked();
-
         sendDpadEvents(touchAction, keysForZones.get(zone));
-
-        // Fade in or out the d-pad.
-        if (touchAction == MotionEvent.ACTION_DOWN)
-        {
-            if (!isFadingIn)
-            {
-                //log.info("Fading in D-pad");
-                animate(500).alpha(255).play();
-                isFadingIn = true;
-            }
-            else
-            {
-                if (getParentView() != null)
-                {
-                    getParentView().removeCallbacks(fadeOutRunnable);
-                }
-            }
-        }
-        else if (e.getActionMasked() == MotionEvent.ACTION_UP)
-        {
-            //log.info("Posting fade-out with 1000 msec delay");
-            if (getParentView() != null)
-            {
-                getParentView().postDelayed(fadeOutRunnable, 1000);
-            }
-        }
+        animateDpad(touchAction);
     }
 
 
@@ -261,6 +264,40 @@ public class DirectionalPad extends RectangleShape
 
         KeyEvent e = new KeyEvent(keyAction, keyCode);
         getParentView().dispatchKeyEvent(e);
+    }
+
+    /**
+     * Handles fading in or fading out the dpad.
+     *
+     * @param touchAction action code for the motion event
+     */
+    private void animateDpad(int touchAction)
+    {
+        // Fade in or out the d-pad.
+        if (touchAction == MotionEvent.ACTION_DOWN || touchAction == MotionEvent.ACTION_MOVE)
+        {
+            if (!isFadingIn)
+            {
+                //log.info("Fading in D-pad");
+                animate(500).alpha(255).play();
+                isFadingIn = true;
+            }
+            else
+            {
+                if (getParentView() != null)
+                {
+                    getParentView().removeCallbacks(fadeOutRunnable);
+                }
+            }
+        }
+        else if (touchAction == MotionEvent.ACTION_UP)
+        {
+            //log.info("Posting fade-out with 1000 msec delay");
+            if (getParentView() != null)
+            {
+                getParentView().postDelayed(fadeOutRunnable, 1000);
+            }
+        }
     }
 
 
