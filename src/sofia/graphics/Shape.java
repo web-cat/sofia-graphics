@@ -267,6 +267,23 @@ public abstract class Shape
         }
     }
 
+    /**
+     * Sets the body's awake state.
+     *
+     * @param flag state to set the body to
+     */
+    public void setAwake(boolean flag)
+    {
+        if (b2Body != null)
+        {
+            b2Body.setAwake(flag);
+        }
+        else
+        {
+            b2BodyDef.awake = flag;
+        }
+    }
+
 
     // ----------------------------------------------------------
     /**
