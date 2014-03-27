@@ -68,6 +68,11 @@ public abstract class Shape
     private float friction;
     private boolean sensor;
 
+    // Used for Sofia Micro to pause and unpause shapes
+    private PointF oldLinearVelocity = new PointF();
+    private float oldLinearDamping = 0.0f;
+    private float oldAngularVelocity = 0.0f;
+    private float oldAngularDamping = 0.0f;
 
     //~ Constructors ..........................................................
 
@@ -662,6 +667,7 @@ public abstract class Shape
         {
             b2Body.setAngularVelocity(radsPerSec);
         }
+        oldAngularVelocity = newVelocity;
     }
 
 
@@ -701,6 +707,7 @@ public abstract class Shape
         {
             b2Body.setAngularDamping(newDamping);
         }
+        oldAngularDamping = newDamping;
     }
 
 
@@ -747,6 +754,7 @@ public abstract class Shape
         {
             b2Body.setLinearVelocity(vec);
         }
+        oldLinearVelocity = newVelocity;
     }
 
 
@@ -802,6 +810,7 @@ public abstract class Shape
         {
             b2Body.setLinearDamping(newDamping);
         }
+        oldLinearDamping = newDamping;
     }
 
 
@@ -1845,6 +1854,17 @@ public abstract class Shape
         }
         //TODO Add more details for determining if they can collide
         return true;
+    }
+
+    /**
+     * Used by sofia micro to reset the speed of the shape after unpausing it.
+     */
+    public void restoreSpeed()
+    {
+        setLinearVelocity(oldLinearVelocity);
+        setLinearDamping(oldLinearDamping);
+        setAngularVelocity(oldAngularVelocity);
+        setAngularDamping(oldAngularDamping);
     }
 
 
