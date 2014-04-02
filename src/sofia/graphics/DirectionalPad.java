@@ -35,24 +35,27 @@ public class DirectionalPad extends RectangleShape
     static
     {
         touchToKeyActions.put(MotionEvent.ACTION_DOWN, KeyEvent.ACTION_DOWN);
+        touchToKeyActions.put(MotionEvent.ACTION_MOVE, KeyEvent.ACTION_DOWN);
         touchToKeyActions.put(MotionEvent.ACTION_UP, KeyEvent.ACTION_UP);
 
-        keysForZones.put(1, new int[] {
+        keysForZones.put(0, new int[] {
                 KeyEvent.KEYCODE_DPAD_RIGHT });
-        keysForZones.put(2, new int[] {
+        keysForZones.put(1, new int[] {
                 KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_DOWN });
-        keysForZones.put(3, new int[] {
+        keysForZones.put(2, new int[] {
                 KeyEvent.KEYCODE_DPAD_DOWN });
-        keysForZones.put(4, new int[] {
+        keysForZones.put(3, new int[] {
                 KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_DOWN });
-        keysForZones.put(5, new int[] {
+        keysForZones.put(4, new int[] {
                 KeyEvent.KEYCODE_DPAD_LEFT });
-        keysForZones.put(6, new int[] {
+        keysForZones.put(5, new int[] {
                 KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_UP });
-        keysForZones.put(7, new int[] {
+        keysForZones.put(6, new int[] {
                 KeyEvent.KEYCODE_DPAD_UP });
-        keysForZones.put(8, new int[] {
+        keysForZones.put(7, new int[] {
                 KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_UP });
+        keysForZones.put(8, new int[] {
+            KeyEvent.KEYCODE_DPAD_CENTER});
     }
 
     //~ Constructors ..........................................................
@@ -114,11 +117,7 @@ public class DirectionalPad extends RectangleShape
     {
         float x0 = getBounds().centerX();
         float y0 = getBounds().centerY();
-
-        // Compute the "zone" that was tapped; 0 is east, 1 is southeast, 2
-        // is south, and so on.
-        float angle =
-                mod(Geometry.angleBetween(x0, y0, tx, ty) + 45.0f / 2, 360.0f);
+        int zone;
 
         // Check the distance to make sure it's actually close to the dpad
         float distance = Geometry.distanceBetween(x0, y0, tx, ty);
@@ -126,8 +125,19 @@ public class DirectionalPad extends RectangleShape
         {
             return;
         }
+        // check to see if the touch event is in the middle of the dpad
+        else if (distance < getWidth() / 6 || distance < getHeight() / 6)
+        {
+            zone = 8;
+        }
+        // Compute the "zone" that was tapped; 1 is east, 2 is southeast, 3
+        // is south, and so on.
+        else {
+            float angle =
+                mod(Geometry.angleBetween(x0, y0, tx, ty) + 45.0f / 2, 360.0f);
+            zone = (int) (angle / 45);
+        }
 
-        int zone = (int) (angle / 45) + 1;
         sendDpadEvents(touchAction, keysForZones.get(zone));
     }
 
@@ -141,13 +151,11 @@ public class DirectionalPad extends RectangleShape
      */
     private void sendDpadEvents(int touchAction, int[] keys)
     {
-        if (touchToKeyActions.get(touchAction) == 0
-         || getParentView() == null)
+        int keyAction = touchToKeyActions.get(touchAction, -1);
+        if (keyAction == -1 || getParentView() == null)
         {
             return;
         }
-
-        int keyAction = touchToKeyActions.get(touchAction);
 
         // Combine the keycodes into a single int using bitmasking
         int keyCode = 0;
