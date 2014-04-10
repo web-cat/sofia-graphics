@@ -48,6 +48,7 @@ public class ShapeView
     // private RepaintThread repaintThread;
     private PhysicsThread                                   physicsThread;
     private CoordinateSystem                                coordinateSystem;
+    private int                                             simulationSpeed;
 
     // Event forwarders
     private final CoordinateRespectingMotionEventDispatcher onTouchDown =
@@ -78,6 +79,9 @@ public class ShapeView
         new EventDispatcher("onFlingGesture");
 
     private Shape                                           shapeBeingDragged;
+
+    /** Used for pausing/unpausing the simulation */
+    public boolean                                          paused = false;
 
 
     // ~ Constructors ..........................................................
@@ -706,12 +710,9 @@ public class ShapeView
                     && shape.getBounds() != null)
                 {
                     drawing.canvas.save();
-
                     PointF pos = shape.getPosition();
                     drawing.canvas.rotate(shape.getRotation(), pos.x, pos.y);
-
                     shape.draw(drawing);
-
                     drawing.canvas.restore();
                 }
             }
@@ -1039,6 +1040,10 @@ public class ShapeView
 
             while (isRunning())
             {
+                if (paused)
+                {
+                    continue;
+                }
                 long startTime = SystemClock.elapsedRealtime();
 
                 int velIters = 10;
