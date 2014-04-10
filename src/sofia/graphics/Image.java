@@ -236,20 +236,14 @@ public class Image
             {
                 bitmap = bitmapCache.get(klass.getName());
             }
-            if (bitmap != null)
-            {
-                alreadyCached = true;
-            }
         }
 
         if (bitmap == null)
         {
-            //System.out.println("Image.resolveAgainstContext(" + context + ")");
             if (bitmapId != 0)
             {
                 bitmap = BitmapFactory.decodeResource(
                     context.getResources(), bitmapId);
-                //System.out.println("id " + Integer.toString(bitmapId, 16) + " = " + bitmap);
             }
             else
             {
@@ -290,14 +284,20 @@ public class Image
 //            System.out.println("bitmap = default image = " + bitmap);
         }
 
+        if ((fileName != null && bitmapCache.containsKey(fileName))
+         || (klass != null && bitmapCache.containsKey(klass.getName())))
+        {
+            alreadyCached = true;
+        }
+
         if (!alreadyCached && bitmap != null)
         {
-            if (fileName != null)
+            if (fileName != null && !bitmapCache.containsKey(fileName))
             {
                 System.out.println("Putting " + fileName + " in cache");
                 bitmapCache.put(fileName, bitmap);
             }
-            if (klass != null)
+            if (klass != null && !bitmapCache.containsKey(klass.getName()))
             {
                 System.out.println("Putting " + klass.getName() + " in cache");
                 bitmapCache.put(klass.getName(), bitmap);
