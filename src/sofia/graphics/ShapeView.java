@@ -1040,10 +1040,6 @@ public class ShapeView
 
             while (isRunning())
             {
-                if (paused)
-                {
-                    continue;
-                }
                 long startTime = SystemClock.elapsedRealtime();
 
                 int velIters = 10;
@@ -1052,7 +1048,10 @@ public class ShapeView
                 World world = shapeField.getB2World();
                 synchronized (world)
                 {
-                    world.step(1f / FRAME_RATE, velIters, posIters);
+                    if (!paused)
+                    {
+                        world.step(1f / FRAME_RATE, velIters, posIters);
+                    }
                 }
 
                 if (animationManager != null)
