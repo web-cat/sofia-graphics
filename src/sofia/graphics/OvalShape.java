@@ -44,6 +44,8 @@ public class OvalShape extends FillableShape
     // ----------------------------------------------------------
     /**
      * Creates an {@code OvalShape} with the specified bounds.
+     *
+     * @param bounds bounding box for the shape
      */
     public OvalShape(RectF bounds)
     {
