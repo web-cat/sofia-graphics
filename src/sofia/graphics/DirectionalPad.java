@@ -104,6 +104,17 @@ public class DirectionalPad extends RectangleShape
         processTouch(e.getActionMasked(), e.getX(), e.getY());
     }
 
+    /**
+     * Handles a touch move event on the directional pad, mapping it to
+     * appropriate key events.
+     *
+     * @param e a {@link MotionEvent} describing the touch
+     */
+    public void onTouchMove(MotionEvent e)
+    {
+        processTouch(e.getActionMasked(), e.getX(), e.getY());
+    }
+
 
     /**
      * An alternative process touch, mostly used for the micro world since it
@@ -121,6 +132,7 @@ public class DirectionalPad extends RectangleShape
 
         // Check the distance to make sure it's actually close to the dpad
         float distance = Geometry.distanceBetween(x0, y0, tx, ty);
+        System.out.println("distance " + distance + " " + tx + " " + ty + " " + getBounds());
         if (distance > getWidth() / 2 || distance > getHeight() / 2)
         {
             return;
