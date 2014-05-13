@@ -806,7 +806,8 @@ public abstract class Shape
 
     // ----------------------------------------------------------
     /**
-     * TODO document
+     * Applies an impulse to the center of the shape, which shoots the shape
+     * off in the given vector.
      *
      * @param x the magnitude of the impulse in the horizontal direction
      * @param y the magnitude of the impulse in the vertical direction
