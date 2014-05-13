@@ -1,5 +1,6 @@
 package sofia.graphics;
 
+import android.graphics.Paint.Style;
 import org.jbox2d.collision.shapes.PolygonShape;
 
 import sofia.graphics.internal.animation.TypeSizeTransformer;
@@ -384,6 +385,7 @@ public class TextShape extends Shape
             Canvas canvas = drawing.getCanvas();
 
             Paint paint = getPaint();
+            paint.setStyle(Style.FILL);
             canvas.drawText(text,
                 getBounds().left, getBounds().top - getAscent(), paint);
         }
