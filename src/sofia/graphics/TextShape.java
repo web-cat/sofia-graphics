@@ -18,6 +18,7 @@ package sofia.graphics;
 
 import sofia.graphics.internal.animation.TypeSizeTransformer;
 
+import android.graphics.Paint.Style;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
@@ -44,6 +45,7 @@ public class TextShape extends Shape
     private String text;
     private Typeface typeface;
     private float typeSize;
+    private boolean filled;
 
 
     //~ Constructors ..........................................................
@@ -95,6 +97,7 @@ public class TextShape extends Shape
         this.pointAndAnchor = pointAndAnchor;
         this.text = text;
         this.typeface = Typeface.DEFAULT;
+        this.filled = true;
     }
 
 
@@ -400,9 +403,41 @@ public class TextShape extends Shape
             Canvas canvas = drawing.getCanvas();
 
             Paint paint = getPaint();
+
+            if(filled)
+            {
+                paint.setStyle(Style.FILL);
+            }
+            else
+            {
+                paint.setStyle(Style.STROKE);
+            }
+
             canvas.drawText(text,
                 getBounds().left, getBounds().top - getAscent(), paint);
         }
+    }
+
+
+    /**
+     * Checks to see if the shape is filled.
+     *
+     * @return the fill type of the text shape
+     */
+    private boolean isFilled()
+    {
+        return filled;
+    }
+
+    // ----------------------------------------------------------
+    /**
+     * Sets the fill state of the shape.
+     *
+     * @param the shape fill
+     */
+    private void setFilled(boolean filled)
+    {
+        this.filled = filled;
     }
 
 
