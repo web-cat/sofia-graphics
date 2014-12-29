@@ -2,4 +2,3 @@
 *.class
 *.jar
 /gen
-/target/
