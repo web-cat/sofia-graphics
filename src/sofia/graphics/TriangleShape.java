@@ -16,275 +16,95 @@
 
 package sofia.graphics;
 
-import sofia.graphics.internal.Box2DUtils;
-import sofia.graphics.FillableShape;
-import sofia.graphics.Polygon;
 import sofia.graphics.Drawing;
 
-import android.graphics.PointF;
 import android.graphics.Path;
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.PointF;
 
-import org.jbox2d.collision.shapes.PolygonShape;
-import org.jbox2d.dynamics.Body;
-import org.jbox2d.common.Vec2;
-
-//-------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 /**
- * The TriangleShape class is a version of the Shape object that has three
- * vertices that are bounded inside a box. The bounding box's coordinate points
- * are specified in the constructor.
+ *  The {@code TriangleShape} class is a version of the {@link PolygonShape} class that
+ *  only takes three vertices.
  *
- * @author Robert Schofield (rjschof)
+ *  @author Robert Schofield (rjschof@vt.edu)
+ *  @version 2015.05.23
  */
 
-public class TriangleShape extends FillableShape
+public class TriangleShape extends PolygonShape
 {
-
-    //~ Fields ................................................................
-
-    private RectF bounds;
-
-    private Polygon polygon;
-
-    private float distanceX;
-    private float distanceYtop;
-    private float distanceYbottom;
-
-    //~ Constructors ..........................................................
+    private PointF[] vertices;
 
     // ----------------------------------------------------------
     /**
-     * Creates a {@code TriangleShape} with default position and size.
+     * Creates a new {@code TriangleShape} object with a default size and
+     * location.
      */
     public TriangleShape()
     {
-        this(new RectF(0, 0, 0, 0));
+        this(0, 0, 0, 0, 0, 0);
     }
 
     // ----------------------------------------------------------
     /**
-     * Creates a new {@code TriangleShape} based on four different values that
-     * describe the top, left, right, and bottom coordinate points of the
-     * triangle.
+     * Creates a new {@code TriangleShape} object with the specified locations
+     * for the vertices.
      *
-     * @param left value for the left coordinate of the triangle
-     * @param top value for the top coordinate of the triangle
-     * @param right value for the right coordinate of the triangle
-     * @param bottom value for the bottom coordinate of the triangle
+     * @param vert1x x coordinate of the first vertex
+     * @param vert1y y coordinate of the first vertex
+     * @param vert2x x coordinate of the second vertex
+     * @param vert2y y coordinate of the second vertex
+     * @param vert3x x coordinate of the third vertex
+     * @param vert3y y coordinate of the third vertex
      */
-    public TriangleShape(float left, float top, float right, float bottom)
+    public TriangleShape(float vert1x, float vert1y, float vert2x,
+        float vert2y, float vert3x, float vert3y)
     {
-        this(new RectF(left, top, right, bottom));
-    }
-
-    //-----------------------------------------------------------
-    /**
-     * Creates a new {@code TriangleShape} with the specified bounds.
-     *
-     * @param bounds the bounds of the triangle
-     */
-    public TriangleShape(RectF bounds)
-    {
-        this.bounds = bounds;
-        this.distanceYtop = Math.abs(bounds.top - calculateCentroid().y);
-        this.distanceYbottom = Math.abs(bounds.bottom - calculateCentroid().y);
-        this.distanceX = Math.abs(bounds.left - calculateCentroid().x);
-
-        polygon = new Polygon(
-            bounds.left + Math.abs((bounds.right-bounds.left)/2), bounds.top,
-            bounds.left, bounds.bottom, bounds.right, bounds.bottom);
-    }
-
-    //~ Methods ...............................................................
-
-
-    //-----------------------------------------------------------
-    /**
-     * Creates fixtures for the JBox2D functions of the shape.
-     */
-    @Override
-    protected void createFixtures()
-    {
-        PolygonShape shape = new PolygonShape();
-        Vec2[] vertices = new Vec2[polygon.size()];
-        for (int i = 0; i < vertices.length; i++)
-        {
-            PointF point = polygon.get(i);
-            vertices[i] = Box2DUtils.pointFToVec2(point);
-        }
-        shape.set(vertices, vertices.length);
-        addFixtureForShape(shape);
+        super(vert1x, vert1y, vert2x, vert2y, vert3x, vert3y);
+        vertices = new PointF[] { new PointF(vert1x, vert1y),
+            new PointF(vert2x, vert2y), new PointF(vert3x, vert3y)
+        };
     }
 
     // ----------------------------------------------------------
     /**
-     * Draws this {@code TriangleShape} on the canvas.
+     * The draw method draws a {@code TriangleShape} object on the screen. If a
+     * color was specified for the fill, the shape will be drawn on the screen
+     * and filled in with the specified color. If a color was specified for the
+     * outline of the shape, the shape will be drawn with an outline of the
+     * specified color.
      *
-     * @param drawing the drawing to put the shape in
+     * @param drawing the drawing in which to draw this {@code TriangleShape}
      */
     @Override
     public void draw(Drawing drawing)
     {
+        PointF origin = getPosition();
         Canvas canvas = drawing.getCanvas();
+
+        sofia.graphics.Polygon poly = new sofia.graphics.Polygon();
+        for (PointF point: polygon)
+        {
+            poly.add(point);
+        }
 
         if (isFilled())
         {
-            PointF origin = getPosition();
-            getFill().fillPolygon(drawing, getAlpha(), polygon, origin);
+            getFill().fillPolygon(drawing, getAlpha(), poly, origin);
         }
+
         if (!getColor().isTransparent())
         {
-            // if the getColor method returns another color that is not
-            // transparent, it means that there is an outline. this draws it:
-            Paint paint = getPaint();
-            RectF bounds = getBounds();
-            Path linePath = new Path();
-            if (bounds.bottom > bounds.top)
-            {
-                // the triangle points upward in a default coordinate system
-                linePath.moveTo(bounds.left +
-                    Math.abs((bounds.right - bounds.left) / 2), bounds.top);
-                linePath.lineTo(bounds.left, bounds.bottom);
-                linePath.moveTo(bounds.left, bounds.bottom);
-                linePath.lineTo(bounds.right, bounds.bottom);
-                linePath.moveTo(bounds.right, bounds.bottom);
-                linePath.lineTo(bounds.left +
-                    Math.abs((bounds.right - bounds.left) / 2), bounds.top);
-                linePath.close();
-            }
-            else if (bounds.top > bounds.bottom)
-            {
-                // the triangle points down in a default coordinate system
-                linePath.moveTo(bounds.left +
-                    Math.abs((bounds.right - bounds.left) / 2), bounds.bottom);
-                linePath.lineTo(bounds.left, bounds.top);
-                linePath.moveTo(bounds.left, bounds.top);
-                linePath.lineTo(bounds.right, bounds.top);
-                linePath.moveTo(bounds.right, bounds.top);
-                linePath.lineTo(bounds.left +
-                    Math.abs((bounds.right - bounds.left) / 2), bounds.bottom);
-                linePath.close();
-            }
-            canvas.drawPath(linePath, paint); // the path is drawn on the view
+            Path outline = new Path();
+            outline.moveTo(vertices[0].x, vertices[0].y);
+            outline.lineTo(vertices[1].x, vertices[1].y);
+            outline.moveTo(vertices[1].x, vertices[1].y);
+            outline.lineTo(vertices[2].x, vertices[2].y);
+            outline.moveTo(vertices[2].x, vertices[2].y);
+            outline.lineTo(vertices[0].x, vertices[0].y);
+            outline.close();
+            canvas.drawPath(outline, getPaint());
         }
-    }
-
-    // ----------------------------------------------------------
-    /**
-     * Sets the position of the triangle. The left, right, top, and bottom
-     * fields are all updated because they are used to calculate different parts
-     * of the {@code TriangleShape}.
-     *
-     * @param x the x coordinate of the position
-     * @param y the y coordinate of the position
-     */
-    @Override
-    public void setPosition(float x, float y)
-    {
-        bounds.left = x - distanceX;
-        bounds.right = x + distanceX;
-
-        if (bounds.bottom > bounds.top)
-        {
-            bounds.top = y - distanceYtop;
-            bounds.bottom = y + distanceYbottom;
-        }
-        else
-        {
-            bounds.top = y + distanceYtop;
-            bounds.bottom = y - distanceYbottom;
-        }
-        super.setPosition(x, y);
-    }
-
-    // ----------------------------------------------------------
-    /**
-     * Calculates the centroid of the triangle.
-     *
-     * @return PointF object that represents the coordinates of the centroid
-     */
-    public PointF calculateCentroid()
-    {
-        float x = (bounds.left + bounds.right +
-            (bounds.left + Math.abs((bounds.left - bounds.right) / 2))) / 3;
-        float y = (bounds.top + bounds.bottom + bounds.bottom) / 3;
-        return new PointF(x, y);
-    }
-
-    // ----------------------------------------------------------
-    /**
-     * Calculates the center of the bounding box of the triangle.
-     *
-     * @return PointF coordinate point for the center of the bounding box of
-     *     the triangle
-     */
-    public PointF calculateCenterOfBox()
-    {
-        float x = Math.abs((bounds.left + bounds.right) / 2);
-        float y = Math.abs((bounds.bottom + bounds.top) / 2);
-        return new PointF(x, y);
-    }
-
-    // ----------------------------------------------------------
-    /**
-     * Retrieves the bounding box for this shape.
-     *
-     * @return the bounding box for this shape
-     */
-    @Override
-    public RectF getBounds()
-    {
-        // If the body has been created, update the center point using the
-        // body's current position.
-
-        PointF center = calculateCentroid();
-
-        Body b2Body = getB2Body();
-        if (b2Body != null)
-        {
-            Box2DUtils.vec2ToPointF(b2Body.getPosition(), center);
-        }
-
-        if (bounds.bottom > bounds.top)
-        {
-            return new RectF(center.x - distanceX, center.y - distanceYtop,
-                center.x + distanceX, center.y + distanceYbottom);
-        }
-        else
-        {
-            return new RectF(center.x - distanceX, center.y - distanceYbottom,
-                center.x + distanceX, center.y + distanceYtop);
-        }
-    }
-
-    // ----------------------------------------------------------
-    /**
-     * Sets the bounding box for this shape.
-     *
-     * @param newBounds the new bounding box for this shape
-     */
-    @Override
-    public void setBounds(RectF newBounds)
-    {
-        bounds.left = newBounds.left;
-        bounds.right = newBounds.right;
-        bounds.bottom = newBounds.bottom;
-        bounds.top = newBounds.top;
-
-        updateTransform(newBounds.centerX(), newBounds.centerY());
-
-        this.distanceYtop = Math.abs(bounds.top - calculateCentroid().y);
-        this.distanceYbottom = Math.abs(bounds.bottom - calculateCentroid().y);
-        this.distanceX = Math.abs(bounds.left - calculateCentroid().x);
-
-        polygon = new Polygon(
-            bounds.left + Math.abs((bounds.right-bounds.left)/2), bounds.top,
-            bounds.left, bounds.bottom, bounds.right, bounds.bottom);
-
-        recreateFixtures();
-        conditionallyRepaint();
     }
 }

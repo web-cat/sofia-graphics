@@ -44,7 +44,10 @@ public class PolygonShape extends FillableShape
 {
     //~ Fields ................................................................
 
-    private Polygon polygon;
+    /**
+     * The Polygon object that represents this PolygonShape.
+     */
+    protected Polygon polygon;
 
 
     //~ Constructors ..........................................................
