@@ -62,7 +62,7 @@ public abstract class Stroke
 
     // ----------------------------------------------------------
     /**
-     * Draws the specified rectangle on a canvas.
+     * Draws the specified polygon on a canvas.
      */
     public void drawPolygon(Drawing drawing, int alpha,
             Polygon polygon, PointF origin)
