@@ -16,13 +16,12 @@
 
 package sofia.graphics;
 
+import android.graphics.Path;
 import sofia.graphics.internal.Box2DUtils;
-
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
-
 import org.jbox2d.common.Vec2;
 
 //-------------------------------------------------------------------------
@@ -124,11 +123,24 @@ public class PolygonShape extends FillableShape
             getFill().fillPolygon(drawing, getAlpha(), polygon, origin);
         }
 
-        // TODO factor out stroke
         if (!getColor().isTransparent())
         {
-            Paint paint = getPaint();
-            //canvas.drawPath(path, paint);
+            Path path = new Path();
+            path.incReserve(polygon.size());
+            for (int i = 0; i < polygon.size(); i++)
+            {
+                PointF pt = polygon.get(i);
+                if (i == 0)
+                {
+                    path.moveTo(origin.x + pt.x, origin.y + pt.y);
+                }
+                else
+                {
+                    path.lineTo(origin.x + pt.x, origin.y + pt.y);
+                }
+            }
+            path.close();
+            drawing.getCanvas().drawPath(path, getPaint());
         }
     }
 

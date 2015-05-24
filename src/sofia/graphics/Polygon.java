@@ -18,10 +18,8 @@ package sofia.graphics;
 
 import sofia.graphics.internal.BayazitDecomposer;
 import sofia.graphics.internal.DouglasPeuckerReducer;
-
 import android.graphics.PointF;
 import android.graphics.RectF;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -205,6 +203,12 @@ public class Polygon implements Iterable<PointF>
      */
     public List<Polygon> convexDecomposition()
     {
+        if (size() < 4)
+        {
+            cachedDecomposition = new ArrayList<Polygon>();
+            cachedDecomposition.add(this);
+        }
+
         if (cachedDecomposition == null)
         {
             BayazitDecomposer decomposer = new BayazitDecomposer(this);
